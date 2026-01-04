@@ -29,6 +29,75 @@ body {
     line-height: 1.6;
     overflow-x: hidden;
     position: relative;
+    cursor: none;
+    /* Hide default cursor */
+}
+
+a,
+button,
+input,
+textarea,
+[role="button"],
+.card,
+.landing-card {
+    cursor: none !important;
+    /* Force hide on interactive elements */
+}
+
+/* Custom Cursor */
+.cursor-dot {
+    width: 6px;
+    height: 6px;
+    background-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    z-index: 10000;
+    pointer-events: none;
+    transition: width 0.3s, height 0.3s, background-color 0.3s;
+}
+
+.cursor-outline {
+    width: 40px;
+    height: 40px;
+    border: 1.5px solid var(--accent);
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    z-index: 9999;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.19, 1, 0.22, 1);
+    opacity: 0.8;
+    mix-blend-mode: difference;
+}
+
+/* Cursor States */
+.cursor-dot.cursor-hover {
+    width: 12px;
+    height: 12px;
+    background-color: #fff;
+}
+
+.cursor-outline.cursor-hover {
+    width: 60px;
+    height: 60px;
+    background-color: rgba(212, 255, 0, 0.1);
+    border-color: #fff;
+    opacity: 0.8;
+}
+
+.cursor-dot.cursor-active {
+    transform: translate(-50%, -50%) scale(0.5);
+}
+
+.cursor-outline.cursor-active {
+    transform: translate(-50%, -50%) scale(1.2);
+    border-color: #fff;
 }
 
 body::before,
@@ -580,6 +649,7 @@ main {
     padding: 2rem;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(212, 255, 0, 0.02);
 }
+
 
 .question-text {
     font-size: 1.25rem;

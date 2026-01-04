@@ -7,8 +7,69 @@ const App = {
     init() {
         this.render();
         this.attachGlobalListeners();
+        this.initCursor();
         window.addEventListener('popstate', (e) => this.handlePopState(e));
         history.replaceState({ state: this.currentState, params: {} }, '');
+    },
+
+    initCursor() {
+        const dot = document.querySelector('.cursor-dot');
+        const outline = document.querySelector('.cursor-outline');
+
+        if (!dot || !outline) return;
+
+        let mouseX = 0;
+        let mouseY = 0;
+        let outlineX = 0;
+        let outlineY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+
+            dot.style.left = `${mouseX}px`;
+            dot.style.top = `${mouseY}px`;
+        });
+
+        // Smooth trailing effect for outline
+        const animateOutline = () => {
+            const distX = mouseX - outlineX;
+            const distY = mouseY - outlineY;
+
+            outlineX += distX * 0.15;
+            outlineY += distY * 0.15;
+
+            outline.style.left = `${outlineX}px`;
+            outline.style.top = `${outlineY}px`;
+
+            requestAnimationFrame(animateOutline);
+        };
+        animateOutline();
+
+        // Hover effect for interactive elements
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.closest('button, a, .card, .landing-card, input, textarea, [role="button"]')) {
+                dot.classList.add('cursor-hover');
+                outline.classList.add('cursor-hover');
+            }
+        });
+
+        document.addEventListener('mouseout', (e) => {
+            if (e.target.closest('button, a, .card, .landing-card, input, textarea, [role="button"]')) {
+                dot.classList.remove('cursor-hover');
+                outline.classList.remove('cursor-hover');
+            }
+        });
+
+        document.addEventListener('mousedown', () => {
+            dot.classList.add('cursor-active');
+            outline.classList.add('cursor-active');
+        });
+
+        document.addEventListener('mouseup', () => {
+            dot.classList.remove('cursor-active');
+            outline.classList.remove('cursor-active');
+        });
     },
 
     attachGlobalListeners() {
