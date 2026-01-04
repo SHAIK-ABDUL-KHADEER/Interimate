@@ -10,7 +10,7 @@ const { generateQuestion, validateCode } = require('./geminiService');
 const fs = require('fs').promises;
 
 const app = express();
-const PORT = 3005; // FORCED PORT CHANGE TO BYPASS GHOSTS
+const PORT = process.env.PORT || 3005; // DYNAMIC PORT FOR RENDER
 const SECRET_KEY = process.env.JWT_SECRET || 'interimate_secret_key';
 const START_TIME = new Date().toISOString();
 
