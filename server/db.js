@@ -17,6 +17,7 @@ async function readJSON(filename) {
 }
 
 async function writeJSON(filename, data) {
+  await fs.mkdir(DATA_DIR, { recursive: true }); // Ensure directory exists
   const filePath = path.join(DATA_DIR, filename);
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
 }
