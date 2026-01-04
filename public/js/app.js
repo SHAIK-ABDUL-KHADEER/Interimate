@@ -80,7 +80,7 @@ const App = {
                 <h2>Access Terminal</h2>
                 <div class="form-group">
                     <label>Operative ID</label>
-                    <input type="text" id="login-empId" placeholder="QEAXXXX">
+                    <input type="text" id="login-empId" placeholder="24XXXX">
                 </div>
                 <div class="form-group">
                     <label>Access Key</label>
@@ -115,7 +115,7 @@ const App = {
                 <h2>Initialize Account</h2>
                 <div class="form-group">
                     <label>Operative ID</label>
-                    <input type="text" id="reg-empId" placeholder="QEAXXXX">
+                    <input type="text" id="reg-empId" placeholder="24XXXX">
                 </div>
                 <div class="form-group">
                     <label>Choose Access Key</label>
@@ -214,7 +214,7 @@ const App = {
                     </div>
                     <h3 style="font-size: 1.8rem; font-weight: 800; text-transform: uppercase;">QUIZ MODE</h3>
                     <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.9rem;">Multiple choice questions to test your theoretical foundation.</p>
-                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ 100 UNITS AVAILABLE ]</div>
+                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ 100 QUESTIONS AVAILABLE ]</div>
                 </div>
 
                 <div class="card selection-card" onclick="App.setState('quiz', { category: '${this.currentCategory}', section: 'practice' })">
@@ -223,7 +223,7 @@ const App = {
                     </div>
                     <h3 style="font-size: 1.8rem; font-weight: 800; text-transform: uppercase;">CODE LAB</h3>
                     <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.9rem;">Real-world coding challenges and practical implementation.</p>
-                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ 50 UNITS AVAILABLE ]</div>
+                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ 50 QUESTIONS AVAILABLE ]</div>
                 </div>
             </div>
         `;

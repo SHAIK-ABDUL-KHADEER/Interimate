@@ -1,9 +1,9 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const topicContext = {
-    'java': 'Core Java logic/syntax: Variable scopes, loops, Strings, Arrays, Collections, and OOP. Focus on logic-heavy snippets.',
-    'selenium': 'Selenium WebDriver: Use actual sites like https://the-internet.herokuapp.com or https://www.saucedemo.com. Focus on finding complex locators and Actions. Snippets only.',
-    'sql': 'Relational SQL: Joins, Subqueries, DDL/DML. Short complex queries only.'
+    'java': 'Core Java logic/syntax. FOR QUESTIONS 1-20: Focus on VERY BASIC logic: Simple loops, basic array handling, string operations (reversing, char count), if-else logic. FOR QUESTIONS 21+: Progress to OOP, Collections, and Exception handling.',
+    'selenium': 'Selenium WebDriver in JAVA ONLY. FOR QUESTIONS 1-20: Focus heavily on FINDING ELEMENTS: ID, name, className, and Basic XPath/CSS selectors. Use sites like https://the-internet.herokuapp.com. SNIPPETS ONLY. NO PYTHON.',
+    'sql': 'Relational SQL. FOR QUESTIONS 1-20: Strictly BASIC DDL (CREATE, ALTER) and DML (INSERT, UPDATE, DELETE, simple SELECT). NO JOINS OR SUBQUERIES until Question 21+.'
 };
 
 let genAI = null;
@@ -17,18 +17,20 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
     const context = topicContext[topic] || topic;
     const unitNumber = existingCount + 1;
 
-    // Scale difficulty based on unit number
+    // Scale difficulty based on question number
     let difficulty = "Mid-level/Intermediate";
-    if (unitNumber <= 5) difficulty = "Extreme Basic/Fundamental Level";
-    else if (unitNumber <= 15) difficulty = "Intermediate/Standard Level";
-    else difficulty = "Advanced/Expert Level";
+    if (unitNumber <= 10) difficulty = "Bedrock Basics/Absolute Beginner";
+    else if (unitNumber <= 20) difficulty = "Foundational Core/Elementary";
+    else difficulty = "Standard/Advanced Level";
 
     let prompt = `
         System: You are Interimate AI. No bluff, answer only what is needed. NO UNNECESSARY COMMENTS.
-        Target Difficulty: ${difficulty} (Unit #${unitNumber}). 
+        Target Difficulty: ${difficulty} (Question #${unitNumber}). 
         Topic: ${topic} (${context}).
-        ${type === 'quiz' ? `Task: Unique MCQ for Unit #${unitNumber}. Start from absolute basics if index is low.` : `Task: Unique Code Snippet Challenge for Unit #${unitNumber}.`}
+        ${type === 'quiz' ? `Task: Unique MCQ for Question #${unitNumber}. Start from absolute BEDROCK basics if index is 1-20.` : `Task: Unique Code Snippet Challenge for Question #${unitNumber}. Focus on basic constructs if index is 1-20.`}
         Prev: ${type === 'quiz' ? existingData.map(q => q.question).slice(-5).join('|') : existingData.map(q => q.title).slice(-5).join('|')}
+        
+        CRITICAL FOR SELENIUM: USE JAVA LANGUAGE ONLY. NEVER USE PYTHON.
         
         JSON Schema:
         ${type === 'quiz' ?
@@ -63,11 +65,13 @@ async function validateCode(topic, title, description, userCode) {
 
         Task: Evaluate the code.
         - If CORRECT: feedback MUST be 1 sentence only.
-        - If INCORRECT: feedback MUST be a brief 1-sentence explanation followed by the solution prefixed with "FIX: ":
-            * FOR SQL: Provide the COMPLETE correct query.
-            * FOR JAVA/SELENIUM: Provide ONLY the specific code snippet or logic that fixes the error.
+        - If INCORRECT: feedback MUST be a brief 1-sentence explanation followed by the solution prefixed with "FIX: ".
         
-        CRITICAL: Ignore minor typos like casing or pluralization (e.g. "department" vs "Departments") if logic is sound.
+        FIX STRUCTURE:
+        * FOR SQL: Provide the COMPLETE correct query, well-formatted with newlines.
+        * FOR JAVA/SELENIUM: Provide the specific code snippet, well-structured and indented. 
+        
+        CRITICAL: Ignore minor typos like casing or pluralization if logic is sound.
         Return JSON: {"isCorrect": boolean, "feedback": "straight on point str"}
         NO BLUFF. No markdown blocks in feedback.
     `;

@@ -90,12 +90,12 @@ const Quiz = {
                         <button class="tab-btn ${this.section === 'practice' ? 'active' : ''}" onclick="Quiz.setSection('practice')">Practice</button>
                     </div>
                     <div class="q-navigation" style="margin-top: 1rem;">
-                        <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); margin-right: 1rem;">UNIT ${this.currentIndex + 1} / ${currentQuestions.length}</span>
+                        <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); margin-right: 1rem;">QUESTION ${this.currentIndex + 1} / ${currentQuestions.length}</span>
                         <select id="q-jump" onchange="Quiz.jumpTo(this.value)" style="background: #000; color: var(--accent); border: 1px solid var(--border); padding: 0.2rem; cursor: pointer;">
                             ${currentQuestions.map((q, i) => {
             const prog = App.userProgress[this.category]?.[this.section]?.[q.id];
             const isCorrect = prog && prog.status === 'correct';
-            return `<option value="${i}" ${i === this.currentIndex ? 'selected' : ''}>UNIT ${i + 1} ${isCorrect ? '✓' : ''}</option>`;
+            return `<option value="${i}" ${i === this.currentIndex ? 'selected' : ''}>QUESTION ${i + 1} ${isCorrect ? '✓' : ''}</option>`;
         }).join('')}
                         </select>
                     </div>
@@ -103,7 +103,7 @@ const Quiz = {
             </div>
 
             <div class="quiz-layout">
-                <button class="side-nav-btn prev" ${this.currentIndex === 0 ? 'disabled' : ''} onclick="Quiz.prev()" title="Previous Unit">
+                <button class="side-nav-btn prev" ${this.currentIndex === 0 ? 'disabled' : ''} onclick="Quiz.prev()" title="Previous Question">
                     <span class="arrow">&lt;</span>
                 </button>
                 
@@ -121,7 +121,7 @@ const Quiz = {
                             ${isLast && !canGenerate ? 'disabled' : ''} 
                             onclick="Quiz.next()" 
                             id="next-btn"
-                            title="${isLast && canGenerate ? 'Generate Next Unit' : 'Next Unit'}">
+                            title="${isLast && canGenerate ? 'Generate Next Question' : 'Next Question'}">
                         <span class="arrow" id="next-arrow">${isLast && canGenerate ? '＋' : '&gt;'}</span>
                     </button>
                     `;
@@ -130,7 +130,7 @@ const Quiz = {
 
             <div class="quiz-footer" style="justify-content: center; border-top: 1px solid var(--border); padding-top: 2rem;">
                 <div class="status-indicator" id="quiz-status" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.2em;">
-                    ${this.isQuestionCompleted(q.id) ? '● UNIT SECURED' : '○ STATUS: PENDING'}
+                    ${this.isQuestionCompleted(q.id) ? '● QUESTION SECURED' : '○ STATUS: PENDING'}
                 </div>
             </div>
         `;
@@ -296,7 +296,7 @@ const Quiz = {
             if (currentQuestions.length < limit) {
                 await this.fetchNextQuestion();
             } else {
-                alert(`Maximum limit of ${limit} units reached for this category.`);
+                alert(`Maximum limit of ${limit} questions reached for this category.`);
             }
         }
     },
@@ -308,10 +308,10 @@ const Quiz = {
 
         if (nextBtn) {
             nextBtn.disabled = true;
-            nextBtn.innerText = 'GENERATING...';
+            nextBtn.innerHTML = '<span style="font-size: 1rem; font-weight: 800; opacity: 1;">...</span>';
         }
         if (statusEl) {
-            statusEl.innerText = 'STATUS: INITIALIZING COMPONENT...';
+            statusEl.innerHTML = '<span style="color: var(--accent); font-weight: 800; animation: pulse 1s infinite;">STATUS: GENERATING NEXT QUESTION... PLEASE WAIT</span>';
         }
 
         try {
@@ -332,7 +332,7 @@ const Quiz = {
             this.render();
         } catch (error) {
             console.error('Failed to fetch next question:', error);
-            alert('Error generating next unit. Please try again.');
+            alert('Error generating next question. Please try again.');
             this.render();
         }
     },
