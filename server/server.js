@@ -9,6 +9,7 @@ const bcrypt = require('bcryptjs');
 const { readJSON, writeJSON } = require('./db');
 const { generateQuestion, validateCode } = require('./geminiService');
 const fs = require('fs').promises;
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 3005; // DYNAMIC PORT FOR RENDER
@@ -24,6 +25,19 @@ console.log('PORT:', PORT);
 console.log('MODEL:', process.env.GEMINI_MODEL);
 console.log('KEY_DETECTED:', !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.startsWith('AIza'));
 console.log('-------------------------------');
+
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI;
+if (MONGODB_URI) {
+    mongoose.connect(MONGODB_URI)
+        .then(() => console.log('--- [SUCCESS] MONGODB CONNECTED ---'))
+        .catch(err => {
+            console.error('--- [ERROR] MONGODB CONNECTION FAILED ---');
+            console.error(err.message);
+        });
+} else {
+    console.warn('--- [WARNING] MONGODB_URI NOT FOUND. FALLBACK TO EPOCH-LOCAL MODE ---');
+}
 
 app.use(cors());
 app.use(bodyParser.json());
