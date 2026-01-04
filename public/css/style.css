@@ -160,6 +160,106 @@ main {
     margin: 0 auto;
     width: 100%;
     padding: 1.5rem 2rem;
+    position: relative;
+    z-index: 10;
+}
+
+/* Landing Page Hero */
+.hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6rem 1rem;
+    min-height: 50vh;
+}
+
+.hero-title {
+    font-size: 5.5rem;
+    font-weight: 950;
+    line-height: 0.9;
+    letter-spacing: -0.06em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: heroFadeIn 1s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.hero-subtitle {
+    font-size: 1rem;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.6em;
+    margin-bottom: 3rem;
+    opacity: 0.8;
+}
+
+.landing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    width: 100%;
+    margin-top: 4rem;
+}
+
+.landing-card {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    cursor: pointer;
+}
+
+.landing-card:hover {
+    background: rgba(212, 255, 0, 0.05);
+    border-color: var(--accent);
+    transform: translateY(-10px);
+}
+
+.landing-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+}
+
+.landing-card p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.cta-group {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+@keyframes heroFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 900px) {
+    .hero-title {
+        font-size: 3.5rem;
+    }
+
+    .landing-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .hidden {

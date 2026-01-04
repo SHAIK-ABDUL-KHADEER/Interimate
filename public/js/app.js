@@ -1,5 +1,5 @@
 const App = {
-    currentState: 'login', // login, dashboard, selection, quiz, leaderboard
+    currentState: 'landing', // landing, login, register, dashboard, selection, quiz, leaderboard
     currentCategory: null,
     currentSection: null, // mcq, practice
     userProgress: {},
@@ -48,7 +48,13 @@ const App = {
 
         if (!Auth.isAuthenticated()) {
             header.classList.add('hidden');
-            this.renderLogin(content);
+            if (this.currentState === 'register') {
+                this.renderRegister(content);
+            } else if (this.currentState === 'login') {
+                this.renderLogin(content);
+            } else {
+                this.renderLanding(content);
+            }
             return;
         }
 
@@ -72,6 +78,37 @@ const App = {
             default:
                 this.renderDashboard(content);
         }
+    },
+
+    renderLanding(container) {
+        container.innerHTML = `
+            <div class="hero">
+                <div class="hero-subtitle">Artificial Intelligence • Professional Intelligence</div>
+                <h1 class="hero-title">Evolve Your<br>Expertise</h1>
+                <p style="color: var(--text-secondary); max-width: 600px; margin-bottom: 3rem; font-size: 1.1rem;">
+                    The next-generation QEA preparation platform. Deep-dive into Java, Selenium, and SQL with AI-driven surgical feedback.
+                </p>
+                <div class="cta-group">
+                    <button class="btn-primary" style="width: auto; padding: 1.2rem 3rem;" onclick="App.setState('register')">INITIALIZE PROTOCOL</button>
+                    <button class="btn-secondary" style="width: auto; padding: 1.2rem 3rem;" onclick="App.setState('login')">OPERATIVE LOGIN</button>
+                </div>
+
+                <div class="landing-grid">
+                    <div class="landing-card" onclick="App.setState('login')">
+                        <h3 style="color: var(--accent);">JAVA CORE</h3>
+                        <p>Master absolute logic, arrays, and syntax fundamentals.</p>
+                    </div>
+                    <div class="landing-card" onclick="App.setState('login')">
+                        <h3 style="color: var(--accent);">SELENIUM</h3>
+                        <p>Locate complex elements and automate professional workflows in Java.</p>
+                    </div>
+                    <div class="landing-card" onclick="App.setState('login')">
+                        <h3 style="color: var(--accent);">SQL DB</h3>
+                        <p>From bedrock DDL to complex relational synthesis.</p>
+                    </div>
+                </div>
+            </div>
+        `;
     },
 
     renderLogin(container) {
