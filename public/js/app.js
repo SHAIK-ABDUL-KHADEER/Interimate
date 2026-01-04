@@ -7,6 +7,8 @@ const App = {
     init() {
         this.render();
         this.attachGlobalListeners();
+        window.addEventListener('popstate', (e) => this.handlePopState(e));
+        history.replaceState({ state: this.currentState, params: {} }, '');
     },
 
     attachGlobalListeners() {
@@ -15,7 +17,7 @@ const App = {
         document.getElementById('nav-logout').addEventListener('click', () => Auth.logout());
     },
 
-    async setState(state, params = {}) {
+    async setState(state, params = {}, pushHistory = true) {
         this.currentState = state;
         if (state === 'dashboard' || state === 'leaderboard' || state === 'selection') {
             await this.loadProgress();
@@ -24,7 +26,19 @@ const App = {
             this.currentCategory = params.category || this.currentCategory;
             this.currentSection = params.section || null;
         }
+
+        if (pushHistory) {
+            history.pushState({ state, params }, '');
+        }
+
         this.render();
+    },
+
+    handlePopState(event) {
+        if (event.state) {
+            const { state, params } = event.state;
+            this.setState(state, params, false);
+        }
     },
 
     async loadProgress() {
