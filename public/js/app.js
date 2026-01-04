@@ -128,33 +128,36 @@ const App = {
     renderLogin(container) {
         container.innerHTML = `
             <div class="auth-container">
-                <h2>Access Terminal</h2>
+                <h2>Operative Login</h2>
                 <div class="form-group">
-                    <label>Operative ID</label>
-                    <input type="text" id="login-empId" placeholder="24XXXX">
+                    <label>Email Address</label>
+                    <input type="email" id="login-email" placeholder="agent@interimate.io">
                 </div>
                 <div class="form-group">
                     <label>Access Key</label>
-                    <input type="password" id="login-password" placeholder="••••••••">
+                    <div style="position: relative;">
+                        <input type="password" id="login-password" placeholder="••••••••">
+                        <span class="password-toggle" onclick="App.togglePassword('login-password')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </span>
+                    </div>
                 </div>
                 <button id="login-btn" class="btn-primary">Authenticate</button>
                 <p style="text-align: center; margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
                     New operative? <a href="#" id="toggle-register" style="color: var(--accent); text-decoration: none;">Initialize Account</a>
                 </p>
+                <button class="btn-secondary" style="margin-top: 1rem; width: 100%;" onclick="App.setState('landing')">Return to Landing</button>
             </div>
         `;
 
-        const loginBtn = document.getElementById('login-btn');
-        const empIdInput = document.getElementById('login-empId');
-        const passwordInput = document.getElementById('login-password');
-        const toggleRegister = document.getElementById('toggle-register');
-
-        loginBtn.addEventListener('click', async () => {
-            const success = await Auth.login(empIdInput.value, passwordInput.value);
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const success = await Auth.login(email, password);
             if (success) this.setState('dashboard');
         });
 
-        toggleRegister.addEventListener('click', (e) => {
+        document.getElementById('toggle-register').addEventListener('click', (e) => {
             e.preventDefault();
             this.renderRegister(container);
         });
@@ -165,31 +168,84 @@ const App = {
             <div class="auth-container">
                 <h2>Initialize Account</h2>
                 <div class="form-group">
-                    <label>Operative ID</label>
-                    <input type="text" id="reg-empId" placeholder="24XXXX">
+                    <label>Username (Unique ID)</label>
+                    <input type="text" id="reg-username" placeholder="Agent_Sigma">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="email" id="reg-email" placeholder="agent@interimate.io">
+                        <button id="send-otp-btn" class="btn-primary" style="width: auto; padding: 0 1rem; font-size: 0.7rem;">Send OTP</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>OTP Code</label>
+                    <input type="text" id="reg-otp" placeholder="XXXXXX">
                 </div>
                 <div class="form-group">
                     <label>Choose Access Key</label>
-                    <input type="password" id="reg-password" placeholder="••••••••">
+                    <div style="position: relative;">
+                        <input type="password" id="reg-password" placeholder="••••••••">
+                        <span class="password-toggle" onclick="App.togglePassword('reg-password')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </span>
+                    </div>
                 </div>
-                <button id="register-btn" class="btn-primary">Create Profile</button>
+                <button id="register-btn" class="btn-primary">Verify & Create</button>
                 <p style="text-align: center; margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
                     Already active? <a href="#" id="toggle-login" style="color: var(--accent); text-decoration: none;">Login</a>
                 </p>
+                <button class="btn-secondary" style="margin-top: 1rem; width: 100%;" onclick="App.setState('landing')">Return to Landing</button>
             </div>
         `;
 
+        document.getElementById('send-otp-btn').addEventListener('click', async () => {
+            const email = document.getElementById('reg-email').value;
+            if (!email) return alert('Enter email first');
+
+            const btn = document.getElementById('send-otp-btn');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const res = await fetch('/api/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                alert(data.message);
+                btn.textContent = 'Resend';
+            } catch (err) {
+                alert('Failed to send OTP');
+                btn.textContent = 'Retry';
+            }
+            btn.disabled = false;
+        });
+
         document.getElementById('register-btn').addEventListener('click', async () => {
-            const empId = document.getElementById('reg-empId').value;
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-password').value;
-            const success = await Auth.register(empId, password);
-            if (success) this.renderLogin(container);
+            const otp = document.getElementById('reg-otp').value;
+
+            const success = await Auth.register(username, email, password, otp);
+            if (success) this.setState('login');
         });
 
         document.getElementById('toggle-login').addEventListener('click', (e) => {
             e.preventDefault();
             this.renderLogin(container);
         });
+    },
+
+    togglePassword(id) {
+        const input = document.getElementById(id);
+        if (input.type === 'password') {
+            input.type = 'text';
+        } else {
+            input.type = 'password';
+        }
     },
 
     renderDashboard(container) {

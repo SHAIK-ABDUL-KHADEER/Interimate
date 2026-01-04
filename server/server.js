@@ -10,6 +10,9 @@ const { readJSON, writeJSON } = require('./db');
 const { generateQuestion, validateCode } = require('./geminiService');
 const fs = require('fs').promises;
 const mongoose = require('mongoose');
+const nodemailer = require('nodemailer');
+const { User, Question, Progress, OTP } = require('./models');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3005; // DYNAMIC PORT FOR RENDER
@@ -49,6 +52,15 @@ app.use((req, res, next) => {
     next();
 });
 
+// Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
 // Middleware to verify JWT
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -65,37 +77,92 @@ const authenticateToken = (req, res, next) => {
 
 // --- AUTH ROUTES ---
 
-app.post('/api/register', async (req, res) => {
-    console.log('Register request received:', req.body);
-    const { empId, password } = req.body;
-    const users = await readJSON('users.json');
+// 1. Send OTP
+app.post('/api/send-otp', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email required' });
 
-    if (users[empId]) {
-        return res.status(400).json({ message: 'User already exists' });
+    try {
+        const otpCode = crypto.randomInt(100000, 999999).toString();
+
+        // Save OTP to DB (TTL will handle expiry)
+        await OTP.findOneAndUpdate({ email }, { otp: otpCode }, { upsert: true });
+
+        // Send Email
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Interimate Access Protocol - OTP Verification',
+            text: `Your OTP for account initialization is: ${otpCode}. This code expires in 10 minutes.`
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.json({ message: 'OTP sent successfully to your email.' });
+    } catch (error) {
+        console.error('OTP Send Error:', error);
+        res.status(500).json({ message: 'Failed to send OTP. Check server logs.' });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    users[empId] = {
-        password: hashedPassword,
-        createdAt: new Date().toISOString()
-    };
-
-    await writeJSON('users.json', users);
-    res.status(201).json({ message: 'User registered successfully' });
 });
 
+// 2. Register
+app.post('/api/register', async (req, res) => {
+    console.log('Register request received:', req.body);
+    const { username, email, password, otp } = req.body;
+
+    try {
+        // Verify OTP
+        const otpRecord = await OTP.findOne({ email, otp });
+        if (!otpRecord) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+
+        // Check if user exists
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Username or Email already exists' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({
+            username,
+            email,
+            password: hashedPassword,
+            isVerified: true
+        });
+
+        await newUser.save();
+
+        // Delete OTP after success
+        await OTP.deleteOne({ email });
+
+        res.status(201).json({ message: 'User registered successfully!' });
+    } catch (error) {
+        console.error('Registration Error:', error);
+        res.status(500).json({ message: 'Failed to register.' });
+    }
+});
+
+// 3. Login
 app.post('/api/login', async (req, res) => {
     console.log('Login request received:', req.body);
-    const { empId, password } = req.body;
-    const users = await readJSON('users.json');
-    const user = users[empId];
+    const { email, password } = req.body;
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-        return res.status(401).json({ message: 'Invalid credentials' });
+    try {
+        const user = await User.findOne({ email });
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(401).json({ message: 'Invalid email or password' });
+        }
+
+        if (!user.isVerified) {
+            return res.status(403).json({ message: 'Please verify your email first.' });
+        }
+
+        const token = jwt.sign({ empId: user.username }, SECRET_KEY, { expiresIn: '24h' });
+        res.json({ token, empId: user.username });
+    } catch (error) {
+        console.error('Login Error:', error);
+        res.status(500).json({ message: 'Login failed.' });
     }
-
-    const token = jwt.sign({ empId }, SECRET_KEY, { expiresIn: '24h' });
-    res.json({ token, empId });
 });
 
 // --- QUESTION ROUTES ---
@@ -211,60 +278,79 @@ app.post('/api/validate', authenticateToken, async (req, res) => {
 // --- PROGRESS ROUTES ---
 
 app.get('/api/progress', authenticateToken, async (req, res) => {
-    const progress = await readJSON('progress.json');
-    res.json(progress[req.user.empId] || {});
+    try {
+        const progress = await Progress.findOne({ username: req.user.empId });
+        res.json(progress ? progress.categories : {});
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching progress' });
+    }
 });
 
 // --- LEADERBOARD ROUTE ---
 
 app.get('/api/leaderboard', authenticateToken, async (req, res) => {
-    const progress = await readJSON('progress.json');
-    const leaderboard = [];
+    try {
+        const allProgress = await Progress.find({});
+        const leaderboard = [];
 
-    for (const [empId, data] of Object.entries(progress)) {
-        let totalCorrect = 0;
-        let totalPractice = 0;
+        for (const p of allProgress) {
+            let totalCorrect = 0;
+            let totalPractice = 0;
+            const data = p.categories;
 
-        ['java', 'selenium', 'sql'].forEach(cat => {
-            if (data[cat]) {
-                totalCorrect += Object.values(data[cat].mcq || {}).filter(q => q.status === 'correct').length;
-                totalPractice += Object.values(data[cat].practice || {}).filter(q => q.status === 'correct').length;
-            }
-        });
+            ['java', 'selenium', 'sql'].forEach(cat => {
+                if (data[cat]) {
+                    totalCorrect += Object.values(data[cat].mcq || {}).filter(q => q.status === 'correct').length;
+                    totalPractice += Object.values(data[cat].practice || {}).filter(q => q.status === 'correct').length;
+                }
+            });
 
-        leaderboard.push({
-            empId,
-            totalCorrect,
-            totalPractice,
-            score: totalCorrect + (totalPractice * 5) // Practice counts more
-        });
+            leaderboard.push({
+                empId: p.username,
+                totalCorrect,
+                totalPractice,
+                score: totalCorrect + (totalPractice * 5)
+            });
+        }
+
+        leaderboard.sort((a, b) => b.score - a.score);
+        res.json(leaderboard.slice(0, 10));
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching leaderboard' });
     }
-
-    // Sort by score descending
-    leaderboard.sort((a, b) => b.score - a.score);
-    res.json(leaderboard.slice(0, 10)); // Top 10
 });
 
 app.post('/api/progress', authenticateToken, async (req, res) => {
     const { category, section, questionId, status, response, feedback } = req.body;
-    const progress = await readJSON('progress.json');
-    const userProgress = progress[req.user.empId] || {};
+    const username = req.user.empId;
 
-    if (!userProgress[category]) {
-        userProgress[category] = { mcq: {}, practice: {}, lastVisited: {} };
+    try {
+        let p = await Progress.findOne({ username });
+        if (!p) {
+            p = new Progress({ username, categories: {} });
+        }
+
+        if (!p.categories[category]) {
+            p.categories[category] = { mcq: {}, practice: {}, lastVisited: {} };
+        }
+
+        // We need to mark Modified for deep objects in Mongoose
+        p.markModified('categories');
+
+        if (section === 'mcq') {
+            p.categories[category].mcq[questionId] = { status, response, timestamp: new Date().toISOString() };
+            p.categories[category].lastVisited.mcq = questionId;
+        } else if (section === 'practice') {
+            p.categories[category].practice[questionId] = { status, response, feedback, timestamp: new Date().toISOString() };
+            p.categories[category].lastVisited.practice = questionId;
+        }
+
+        await p.save();
+        res.json({ message: 'Progress updated' });
+    } catch (error) {
+        console.error('Progress Update Error:', error);
+        res.status(500).json({ message: 'Failed to update progress' });
     }
-
-    if (section === 'mcq') {
-        userProgress[category].mcq[questionId] = { status, response, timestamp: new Date().toISOString() };
-        userProgress[category].lastVisited.mcq = questionId;
-    } else if (section === 'practice') {
-        userProgress[category].practice[questionId] = { status, response, feedback, timestamp: new Date().toISOString() };
-        userProgress[category].lastVisited.practice = questionId;
-    }
-
-    progress[req.user.empId] = userProgress;
-    await writeJSON('progress.json', progress);
-    res.json({ message: 'Progress updated' });
 });
 
 // Ping endpoint for health checks

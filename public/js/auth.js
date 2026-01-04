@@ -1,13 +1,13 @@
 const Auth = {
     token: localStorage.getItem('token'),
-    empId: localStorage.getItem('empId'),
+    empId: localStorage.getItem('empId'), // This remains as the username internally for consistency
 
-    async login(empId, password) {
+    async login(email, password) {
         try {
             const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ empId, password })
+                body: JSON.stringify({ email, password })
             });
 
             if (!response.ok) {
@@ -28,12 +28,12 @@ const Auth = {
         }
     },
 
-    async register(empId, password) {
+    async register(username, email, password, otp) {
         try {
             const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ empId, password })
+                body: JSON.stringify({ username, email, password, otp })
             });
 
             if (!response.ok) {
@@ -41,7 +41,7 @@ const Auth = {
                 throw new Error(data.message || 'Registration failed');
             }
 
-            alert('Registration successful! please login.');
+            alert('Registration successful! Please login.');
             return true;
         } catch (error) {
             console.error('Registration error:', error);

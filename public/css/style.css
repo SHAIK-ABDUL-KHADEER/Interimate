@@ -317,6 +317,24 @@ main {
     border-color: var(--accent);
 }
 
+.password-toggle {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+    user-select: none;
+    z-index: 5;
+}
+
+.password-toggle:hover {
+    color: var(--accent);
+}
+
 .btn-primary {
     width: 100%;
     padding: 1rem;
