@@ -1,4 +1,5 @@
 const path = require('path');
+const https = require('https');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -252,6 +253,11 @@ app.post('/api/progress', authenticateToken, async (req, res) => {
     res.json({ message: 'Progress updated' });
 });
 
+// Ping endpoint for health checks
+app.get('/api/ping', (req, res) => {
+    res.status(200).send('ACK');
+});
+
 const serverInstance = app.listen(PORT, '0.0.0.0', () => {
     console.log(`--- [READY] INTERIMATE SERVER ACTIVE ON PORT ${PORT} ---`);
     console.log(`--- [SIG] CORE_VERSION_3.0_SIGMA ---`);
@@ -270,3 +276,16 @@ serverInstance.on('error', (err) => {
     }
     process.exit(1);
 });
+
+// SELF-PING KEEP ALIVE (prevents Render from sleeping)
+const EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL;
+if (EXTERNAL_URL) {
+    console.log(`[KEEP-ALIVE] Initializing for: ${EXTERNAL_URL}`);
+    setInterval(() => {
+        https.get(`${EXTERNAL_URL}/api/ping`, (res) => {
+            console.log(`[KEEP-ALIVE] Ping sent: ${res.statusCode}`);
+        }).on('error', (err) => {
+            console.error('[KEEP-ALIVE] Ping error:', err.message);
+        });
+    }, 14 * 60 * 1000); // 14 mins
+}
