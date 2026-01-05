@@ -92,6 +92,15 @@ const App = {
             history.pushState({ state, params }, '');
         }
 
+        // --- GOOGLE ANALYTICS: Track Virtual Page View ---
+        if (window.gtag) {
+            gtag('event', 'page_view', {
+                page_title: state.charAt(0).toUpperCase() + state.slice(1),
+                page_location: window.location.href,
+                page_path: `/${state}`
+            });
+        }
+
         this.render();
     },
 

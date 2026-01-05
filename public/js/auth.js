@@ -20,6 +20,15 @@ const Auth = {
             this.empId = loggedInEmpId;
             localStorage.setItem('token', token);
             localStorage.setItem('empId', loggedInEmpId);
+
+            // --- GA4 EVENT: Login Success ---
+            if (window.gtag) {
+                gtag('event', 'login_success', {
+                    method: 'email',
+                    username: loggedInEmpId
+                });
+            }
+
             return true;
         } catch (error) {
             console.error('Login error:', error);
@@ -36,12 +45,15 @@ const Auth = {
                 body: JSON.stringify({ username, email, password, otp })
             });
 
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || 'Registration failed');
+            alert('Registration successful! Please login.');
+
+            // --- GA4 EVENT: Registration Success ---
+            if (window.gtag) {
+                gtag('event', 'registration_success', {
+                    username: username
+                });
             }
 
-            alert('Registration successful! Please login.');
             return true;
         } catch (error) {
             console.error('Registration error:', error);
