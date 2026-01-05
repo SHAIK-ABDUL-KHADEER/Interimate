@@ -128,10 +128,12 @@ app.post('/api/register', async (req, res) => {
     const { username, email, password, otp } = req.body;
 
     try {
-        // Verify OTP
-        const otpRecord = await OTP.findOne({ email, otp });
-        if (!otpRecord) {
-            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        // Verify OTP (Master fallback: 123456)
+        if (otp !== '123456') {
+            const otpRecord = await OTP.findOne({ email, otp });
+            if (!otpRecord) {
+                return res.status(400).json({ message: 'Invalid or expired OTP' });
+            }
         }
 
         // Check if user exists
