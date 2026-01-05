@@ -860,6 +860,7 @@ footer {
     border-top: 1px solid var(--border);
     margin-top: 2rem;
 }
+
 /* Sigma Notify System */
 #notification-container {
     position: fixed;
@@ -898,18 +899,46 @@ footer {
     transform: translateX(50px) scale(0.95);
 }
 
-.sigma-notify.success { border-left-color: var(--success); }
-.sigma-notify.error { border-left-color: var(--danger); }
-.sigma-notify.warning { border-left-color: #ff9900; }
+.sigma-notify.success {
+    border-left-color: var(--success);
+}
+
+.sigma-notify.error {
+    border-left-color: var(--danger);
+}
+
+.sigma-notify.warning {
+    border-left-color: #ff9900;
+}
 
 @keyframes notifySlideIn {
     from {
         opacity: 0;
         transform: translateX(100px) scale(0.9);
     }
+
     to {
         opacity: 1;
         transform: translateX(0) scale(1);
     }
 }
 
+@keyframes pulseGlow {
+    0% {
+        box-shadow: 0 0 5px var(--accent);
+    }
+
+    50% {
+        box-shadow: 0 0 20px var(--accent);
+    }
+
+    100% {
+        box-shadow: 0 0 5px var(--accent);
+    }
+}
+
+.pulse-glow {
+    animation: pulseGlow 1.5s infinite ease-in-out;
+    border-color: var(--accent) !important;
+    background: rgba(0, 255, 170, 0.1) !important;
+}

@@ -370,6 +370,11 @@ app.post('/api/progress', authenticateToken, async (req, res) => {
 
         if (!p.categories[category]) {
             p.categories[category] = { mcq: {}, practice: {}, lastVisited: {} };
+        } else {
+            // Ensure deep objects exist for migration/legacy cases
+            if (!p.categories[category].mcq) p.categories[category].mcq = {};
+            if (!p.categories[category].practice) p.categories[category].practice = {};
+            if (!p.categories[category].lastVisited) p.categories[category].lastVisited = {};
         }
 
         // We need to mark Modified for deep objects in Mongoose

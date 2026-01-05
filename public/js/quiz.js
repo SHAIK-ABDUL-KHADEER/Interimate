@@ -217,19 +217,32 @@ const Quiz = {
         this.render();
     },
 
-    async submitPractice() {
+    async submitPractice(isConfirmed = false) {
         const q = this.questions[this.section][this.currentIndex];
         const code = document.getElementById('code-editor').value;
         const feedbackEl = document.getElementById('practice-feedback');
 
-        // Confirm gate to save user tokens
-        if (!confirm("ARE YOU SURE TO EXECUTE YOUR CODE?\n\nYou only have ONE ATTEMPT per challenge. The system will perform a thorough technical review of your snippet. Consuming 1 session token...")) {
+        if (!isConfirmed) {
+            App.notify("CLEARANCE REQUIRED: You only have ONE ATTEMPT per challenge. Click again to AUTHORIZE execution.", "warning");
+            const btn = document.querySelector('.btn-primary');
+            if (btn) {
+                btn.textContent = "AUTHORIZE EXECUTION";
+                btn.onclick = () => this.submitPractice(true);
+                btn.classList.add('pulse-glow');
+            }
             return;
         }
 
         if (code.trim() === q.template.trim()) {
             feedbackEl.innerHTML = `<p style="color: var(--danger);">SYSTEM ERROR: NO MODIFICATIONS DETECTED.</p>`;
             feedbackEl.classList.remove('hidden');
+            // Reset button if they failed the check
+            const btn = document.querySelector('.btn-primary');
+            if (btn) {
+                btn.textContent = "EXECUTE CODE";
+                btn.onclick = () => this.submitPractice(false);
+                btn.classList.remove('pulse-glow');
+            }
             return;
         }
 
