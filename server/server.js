@@ -55,15 +55,18 @@ app.use((req, res, next) => {
 // Nodemailer Transporter - Robust Configuration for Cloud/Render
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // Use SSL
+    port: 587,
+    secure: false, // Use STARTTLS
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    connectionTimeout: 10000, // 10s
-    greetingTimeout: 10000,
-    socketTimeout: 20000
+    connectionTimeout: 20000, // 20s
+    greetingTimeout: 20000,
+    socketTimeout: 30000,
+    tls: {
+        rejectUnauthorized: false // Handle cert issues in cloud nodes
+    }
 });
 
 // Verify Email Connection on Startup
