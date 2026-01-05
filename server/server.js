@@ -52,12 +52,27 @@ app.use((req, res, next) => {
     next();
 });
 
-// Nodemailer Transporter
+// Nodemailer Transporter - Robust Configuration for Cloud/Render
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // Use SSL
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
+    },
+    connectionTimeout: 10000, // 10s
+    greetingTimeout: 10000,
+    socketTimeout: 20000
+});
+
+// Verify Email Connection on Startup
+transporter.verify((error, success) => {
+    if (error) {
+        console.error('--- [ERROR] EMAIL_BRIDGE_FAILED ---');
+        console.error(error);
+    } else {
+        console.log('--- [READY] INTERNAL_EMAIL_BRIDGE_ACTIVE ---');
     }
 });
 
