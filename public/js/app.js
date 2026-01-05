@@ -12,6 +12,33 @@ const App = {
         history.replaceState({ state: this.currentState, params: {} }, '');
     },
 
+    notify(message, type = 'info') {
+        const container = document.getElementById('notification-container');
+        if (!container) return;
+
+        const notification = document.createElement('div');
+        notification.className = `sigma-notify ${type}`;
+
+        notification.innerHTML = `
+            <span>${message}</span>
+            <div class="notify-close" style="cursor:pointer; opacity:0.5;">&times;</div>
+        `;
+
+        container.appendChild(notification);
+
+        // Auto remove
+        const timer = setTimeout(() => {
+            notification.classList.add('fade-out');
+            setTimeout(() => notification.remove(), 400);
+        }, 4000);
+
+        notification.querySelector('.notify-close').onclick = () => {
+            clearTimeout(timer);
+            notification.classList.add('fade-out');
+            setTimeout(() => notification.remove(), 400);
+        };
+    },
+
     initCursor() {
         const dot = document.querySelector('.cursor-dot');
         const outline = document.querySelector('.cursor-outline');
@@ -270,8 +297,7 @@ const App = {
         `;
 
         document.getElementById('send-otp-btn').addEventListener('click', async () => {
-            const email = document.getElementById('reg-email').value;
-            if (!email) return alert('Enter email first');
+            if (!email) return App.notify('Enter email first', 'error');
 
             const btn = document.getElementById('send-otp-btn');
             btn.disabled = true;
@@ -284,10 +310,10 @@ const App = {
                     body: JSON.stringify({ email })
                 });
                 const data = await res.json();
-                alert(data.message);
+                App.notify(data.message, res.ok ? 'success' : 'error');
                 btn.textContent = 'Resend';
             } catch (err) {
-                alert('Failed to send OTP');
+                App.notify('Failed to send OTP', 'error');
                 btn.textContent = 'Retry';
             }
             btn.disabled = false;

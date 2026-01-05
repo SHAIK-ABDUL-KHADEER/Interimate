@@ -28,7 +28,9 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
         Target Difficulty: ${difficulty} (Question #${unitNumber}). 
         Topic: ${topic} (${context}).
         ${type === 'quiz' ? `Task: Unique MCQ for Question #${unitNumber}. Start from absolute BEDROCK basics if index is 1-20.` : `Task: Unique Code Snippet Challenge for Question #${unitNumber}. Focus on basic constructs if index is 1-20.`}
-        Prev: ${type === 'quiz' ? existingData.map(q => q.question).slice(-5).join('|') : existingData.map(q => q.title).slice(-5).join('|')}
+        History (Do NOT repeat anything similar to these): ${type === 'quiz' ? existingData.map(q => q.question).slice(-15).join('|') : existingData.map(q => q.title).slice(-15).join('|')}
+        
+        CRITICAL: The generated ${type === 'quiz' ? 'question' : 'challenge'} must be completely distinct from the history provided above in both concept and wording.
         
         CRITICAL FOR SELENIUM: USE JAVA LANGUAGE ONLY. NEVER USE PYTHON.
         

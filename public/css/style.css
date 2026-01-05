@@ -860,3 +860,56 @@ footer {
     border-top: 1px solid var(--border);
     margin-top: 2rem;
 }
+/* Sigma Notify System */
+#notification-container {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    z-index: 11000;
+    pointer-events: none;
+}
+
+.sigma-notify {
+    min-width: 300px;
+    max-width: 450px;
+    padding: 1.25rem 1.5rem;
+    background: rgba(5, 5, 5, 0.9);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    pointer-events: auto;
+    animation: notifySlideIn 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    transition: all 0.3s ease;
+}
+
+.sigma-notify.fade-out {
+    opacity: 0;
+    transform: translateX(50px) scale(0.95);
+}
+
+.sigma-notify.success { border-left-color: var(--success); }
+.sigma-notify.error { border-left-color: var(--danger); }
+.sigma-notify.warning { border-left-color: #ff9900; }
+
+@keyframes notifySlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+

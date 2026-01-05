@@ -32,7 +32,7 @@ const Auth = {
             return true;
         } catch (error) {
             console.error('Login error:', error);
-            alert(error.message);
+            App.notify(error.message, 'error');
             return false;
         }
     },
@@ -45,7 +45,7 @@ const Auth = {
                 body: JSON.stringify({ username, email, password, otp })
             });
 
-            alert('Registration successful! Please login.');
+            App.notify('Registration successful! Please login.', 'success');
 
             // --- GA4 EVENT: Registration Success ---
             if (window.gtag) {
@@ -57,7 +57,7 @@ const Auth = {
             return true;
         } catch (error) {
             console.error('Registration error:', error);
-            alert(error.message);
+            App.notify(error.message, 'error');
             return false;
         }
     },

@@ -296,7 +296,7 @@ const Quiz = {
             if (currentQuestions.length < limit) {
                 await this.fetchNextQuestion();
             } else {
-                alert(`Maximum limit of ${limit} questions reached for this category.`);
+                App.notify(`Maximum limit of ${limit} questions reached for this category.`, 'warning');
             }
         }
     },
@@ -332,7 +332,7 @@ const Quiz = {
             this.render();
         } catch (error) {
             console.error('Failed to fetch next question:', error);
-            alert('Error generating next question. Please try again.');
+            App.notify('Error generating next question. Please try again.', 'error');
             this.render();
         }
     },
