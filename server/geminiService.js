@@ -27,7 +27,8 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
         System: You are Interimate AI. No bluff, answer only what is needed. NO UNNECESSARY COMMENTS.
         Target Difficulty: ${difficulty} (Question #${unitNumber}). 
         Topic: ${topic} (${context}).
-        ${type === 'quiz' ? `Task: Unique MCQ for Question #${unitNumber}. Start from absolute BEDROCK basics if index is 1-20.` : `Task: Unique Code Snippet Challenge for Question #${unitNumber}. Focus on basic constructs if index is 1-20.`}
+        ${type === 'quiz' ? `Task: Unique MCQ for Question #${unitNumber}. Start from absolute BEDROCK basics if index is 1-20. 
+        CRITICAL FOR MCQs: If the question asks for the "output" or "result" of a code snippet, YOU MUST INCLUDE THE CODE SNIPPET inside the "question" field using markdown backticks (e.g. \`\`\`java \\n [CODE HERE] \\n \`\`\`).` : `Task: Unique Code Snippet Challenge for Question #${unitNumber}. Focus on basic constructs if index is 1-20.`}
         History (Do NOT repeat anything similar to these): ${type === 'quiz' ? existingData.map(q => q.question).slice(-15).join('|') : existingData.map(q => q.title).slice(-15).join('|')}
         
         CRITICAL: The generated ${type === 'quiz' ? 'question' : 'challenge'} must be completely distinct from the history provided above in both concept and wording.
