@@ -297,6 +297,7 @@ const App = {
         `;
 
         document.getElementById('send-otp-btn').addEventListener('click', async () => {
+            const email = document.getElementById('reg-email').value;
             if (!email) return App.notify('Enter email first', 'error');
 
             const btn = document.getElementById('send-otp-btn');
