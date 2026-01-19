@@ -112,10 +112,18 @@ const authenticateToken = (req, res, next) => {
 
 // 1. Send OTP
 app.post('/api/send-otp', async (req, res) => {
-    const { email } = req.body;
+    const { email, username } = req.body;
     if (!email) return res.status(400).json({ message: 'Email required' });
+    if (!username) return res.status(400).json({ message: 'Username required' });
 
     try {
+        // Pre-validation: Check if user already exists
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+        if (existingUser) {
+            const conflict = existingUser.email === email ? 'Email' : 'Username';
+            return res.status(400).json({ message: `${conflict} already registered. Please login or use different credentials.` });
+        }
+
         const otpCode = crypto.randomInt(100000, 999999).toString();
         await OTP.findOneAndUpdate({ email }, { otp: otpCode }, { upsert: true });
 

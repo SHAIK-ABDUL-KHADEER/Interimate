@@ -297,7 +297,9 @@ const App = {
         `;
 
         document.getElementById('send-otp-btn').addEventListener('click', async () => {
+            const username = document.getElementById('reg-username').value;
             const email = document.getElementById('reg-email').value;
+            if (!username) return App.notify('Enter username first', 'error');
             if (!email) return App.notify('Enter email first', 'error');
 
             const btn = document.getElementById('send-otp-btn');
@@ -308,7 +310,7 @@ const App = {
                 const res = await fetch('/api/send-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify({ email, username })
                 });
                 const data = await res.json();
                 App.notify(data.message, res.ok ? 'success' : 'error');
