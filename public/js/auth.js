@@ -45,6 +45,11 @@ const Auth = {
                 body: JSON.stringify({ username, email, password, otp })
             });
 
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Registration failed');
+            }
+
             App.notify('Registration successful! Please login.', 'success');
 
             // --- GA4 EVENT: Registration Success ---
