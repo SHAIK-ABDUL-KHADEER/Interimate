@@ -154,7 +154,7 @@ app.post('/api/send-otp', async (req, res) => {
 
 // 2. Register
 app.post('/api/register', async (req, res) => {
-    console.log('Register request received:', req.body);
+    console.log('>>> [REG_INCOMING]', req.body.email, req.body.username);
     const { username, email, password, otp } = req.body;
 
     try {
@@ -162,6 +162,7 @@ app.post('/api/register', async (req, res) => {
         if (otp !== '123456') {
             const otpRecord = await OTP.findOne({ email, otp });
             if (!otpRecord) {
+                console.warn('!!! [REG_OTP_FAIL]', email);
                 return res.status(400).json({ message: 'Invalid or expired OTP' });
             }
         }
@@ -169,6 +170,7 @@ app.post('/api/register', async (req, res) => {
         // Check if user exists
         const existingUser = await User.findOne({ $or: [{ username }, { email }] });
         if (existingUser) {
+            console.warn('!!! [REG_CONFLICT]', username, email);
             return res.status(400).json({ message: 'Username or Email already exists' });
         }
 
@@ -181,6 +183,7 @@ app.post('/api/register', async (req, res) => {
         });
 
         await newUser.save();
+        console.log('+++ [REG_SUCCESS]', email);
 
         // Delete OTP after success
         await OTP.deleteOne({ email });
@@ -194,19 +197,28 @@ app.post('/api/register', async (req, res) => {
 
 // 3. Login
 app.post('/api/login', async (req, res) => {
-    console.log('Login request received:', req.body);
+    console.log('>>> [LOGIN_INCOMING]', req.body.email);
     const { email, password } = req.body;
 
     try {
         const user = await User.findOne({ email });
-        if (!user || !(await bcrypt.compare(password, user.password))) {
+        if (!user) {
+            console.warn('!!! [LOGIN_USER_NOT_FOUND]', email);
+            return res.status(401).json({ message: 'Invalid email or password' });
+        }
+
+        const passMatch = await bcrypt.compare(password, user.password);
+        if (!passMatch) {
+            console.warn('!!! [LOGIN_PWD_MISMATCH]', email);
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
         if (!user.isVerified) {
+            console.warn('!!! [LOGIN_UNVERIFIED]', email);
             return res.status(403).json({ message: 'Please verify your email first.' });
         }
 
+        console.log('+++ [LOGIN_SUCCESS]', email);
         const token = jwt.sign({ empId: user.username }, SECRET_KEY, { expiresIn: '24h' });
         res.json({ token, empId: user.username });
     } catch (error) {
