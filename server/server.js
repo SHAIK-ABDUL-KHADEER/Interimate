@@ -57,10 +57,12 @@ const transporter = nodemailer.createTransport({
     host: 'smtp.hostinger.com',
     port: 465,
     secure: true, // Use SSL for Port 465
-    pool: true,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
+    },
+    tls: {
+        rejectUnauthorized: false // Required for some cloud environments
     },
     connectionTimeout: 20000,
     greetingTimeout: 20000,
