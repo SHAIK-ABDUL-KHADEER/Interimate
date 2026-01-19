@@ -52,17 +52,17 @@ app.use((req, res, next) => {
     next();
 });
 
-// Nodemailer Transporter - Hostinger Professional SMTP
+// Nodemailer Transporter - Hostinger STARTTLS Mode (Port 587)
 const transporter = nodemailer.createTransport({
     host: 'smtp.hostinger.com',
-    port: 465,
-    secure: true, // Use SSL for Port 465
+    port: 587,
+    secure: false, // Use STARTTLS for Port 587
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
     tls: {
-        rejectUnauthorized: false // Required for some cloud environments
+        rejectUnauthorized: false
     },
     connectionTimeout: 20000,
     greetingTimeout: 20000,
