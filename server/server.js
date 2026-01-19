@@ -52,34 +52,44 @@ app.use((req, res, next) => {
     next();
 });
 
-// Nodemailer Transporter - Hostinger STARTTLS Mode (Port 587)
-const transporter = nodemailer.createTransport({
-    host: 'smtp.hostinger.com',
-    port: 587,
-    secure: false, // Use STARTTLS for Port 587
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    tls: {
-        rejectUnauthorized: false
-    },
-    connectionTimeout: 20000,
-    greetingTimeout: 20000,
-    socketTimeout: 30000,
-    debug: true,
-    logger: true
-});
+// Email Service - Brevo HTTP API Bridge (Zero-Port Restriction)
+const sendEmail = async (to, subject, text) => {
+    return new Promise((resolve, reject) => {
+        const data = JSON.stringify({
+            sender: { name: "Interimate Support", email: process.env.EMAIL_USER || "support@interimate.com" },
+            to: [{ email: to }],
+            subject: subject,
+            textContent: text
+        });
 
-// Verify Email Connection on Startup
-transporter.verify((error, success) => {
-    if (error) {
-        console.error('--- [WARNING] EMAIL_BRIDGE_STANDBY ---');
-        console.log('Reason:', error.message);
-    } else {
-        console.log('--- [READY] INTERNAL_EMAIL_BRIDGE_ACTIVE ---');
-    }
-});
+        const options = {
+            hostname: 'api.brevo.com',
+            path: '/v3/smtp/email',
+            method: 'POST',
+            headers: {
+                'api-key': process.env.BREVO_API_KEY,
+                'content-type': 'application/json',
+                'accept': 'application/json'
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let resData = '';
+            res.on('data', (chunk) => resData += chunk);
+            res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    resolve(JSON.parse(resData));
+                } else {
+                    reject(new Error(`Brevo API Error ${res.statusCode}: ${resData}`));
+                }
+            });
+        });
+
+        req.on('error', (err) => reject(err));
+        req.write(data);
+        req.end();
+    });
+};
 
 // Middleware to verify JWT
 const authenticateToken = (req, res, next) => {
@@ -106,26 +116,21 @@ app.post('/api/send-otp', async (req, res) => {
         const otpCode = crypto.randomInt(100000, 999999).toString();
         await OTP.findOneAndUpdate({ email }, { otp: otpCode }, { upsert: true });
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Interimate Access Protocol - OTP Verification',
-            text: `Your OTP for account initialization is: ${otpCode}. This code expires in 10 minutes.`
-        };
+        const emailText = `Your OTP for account initialization is: ${otpCode}. This code expires in 10 minutes.`;
 
-        // Retry logic for SendMail
+        // Retry logic for SendMail (API Mode)
         let attempts = 0;
         let sent = false;
         let lastError = null;
 
         while (attempts < 3 && !sent) {
             try {
-                await transporter.sendMail(mailOptions);
+                await sendEmail(email, 'Interimate Access Protocol - OTP Verification', emailText);
                 sent = true;
             } catch (err) {
                 attempts++;
                 lastError = err;
-                console.warn(`SMTP Attempt ${attempts} failed:`, err.message);
+                console.warn(`Email API Attempt ${attempts} failed:`, err.message);
                 if (attempts < 3) await new Promise(r => setTimeout(r, 2000));
             }
         }
