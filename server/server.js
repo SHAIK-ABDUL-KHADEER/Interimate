@@ -54,6 +54,9 @@ app.use((req, res, next) => {
 
 // Email Service - Brevo HTTP API Bridge (Zero-Port Restriction)
 const sendEmail = async (to, subject, text) => {
+    if (!process.env.BREVO_API_KEY) {
+        throw new Error('CONFIG_ERROR: BREVO_API_KEY is missing from environment variables.');
+    }
     return new Promise((resolve, reject) => {
         const data = JSON.stringify({
             sender: { name: "Interimate Support", email: process.env.EMAIL_USER || "support@interimate.com" },
