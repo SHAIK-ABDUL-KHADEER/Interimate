@@ -45,10 +45,8 @@ const Auth = {
                 body: JSON.stringify({ username, email, password, otp })
             });
 
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || 'Registration failed');
-            }
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Registration failed');
 
             App.notify('Registration successful! Please login.', 'success');
 
@@ -62,6 +60,46 @@ const Auth = {
             return true;
         } catch (error) {
             console.error('Registration error:', error);
+            App.notify(error.message, 'error');
+            return false;
+        }
+    },
+
+    async forgotPasswordOTP(email) {
+        try {
+            const response = await fetch('/api/forgot-password-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Failed to send reset code');
+
+            App.notify(data.message, 'success');
+            return true;
+        } catch (error) {
+            console.error('Forgot password error:', error);
+            App.notify(error.message, 'error');
+            return false;
+        }
+    },
+
+    async resetPassword(email, otp, newPassword) {
+        try {
+            const response = await fetch('/api/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, otp, newPassword })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Failed to reset password');
+
+            App.notify(data.message, 'success');
+            return true;
+        } catch (error) {
+            console.error('Reset password error:', error);
             App.notify(error.message, 'error');
             return false;
         }

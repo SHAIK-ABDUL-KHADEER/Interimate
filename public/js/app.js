@@ -238,6 +238,9 @@ const App = {
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         </span>
                     </div>
+                    <div style="text-align: right; margin-top: 5px;">
+                        <a href="#" id="toggle-forgot" style="font-size: 0.65rem; color: var(--accent); text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em;">Forgot Access Key?</a>
+                    </div>
                 </div>
                 <button id="login-btn" class="btn-primary">Authenticate</button>
                 <p style="text-align: center; margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
@@ -257,6 +260,100 @@ const App = {
         document.getElementById('toggle-register').addEventListener('click', (e) => {
             e.preventDefault();
             this.renderRegister(container);
+        });
+
+        document.getElementById('toggle-forgot').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.renderForgotPassword(container);
+        });
+    },
+
+    renderForgotPassword(container) {
+        container.innerHTML = `
+            <div class="auth-container">
+                <h2>Portal Access Recovery</h2>
+                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 1.5rem; text-align: center;">ENTER YOUR REGISTERED EMAIL TO RECEIVE A RECOVERY CODE.</p>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="forgot-email" placeholder="agent@interimate.io">
+                </div>
+                <button id="forgot-btn" class="btn-primary">Send Recovery Code</button>
+                <p style="text-align: center; margin-top: 1.5rem; font-size: 0.75rem;">
+                    <a href="#" id="back-to-login" style="color: var(--accent); text-decoration: none;">Return to Login</a>
+                </p>
+            </div>
+        `;
+
+        document.getElementById('forgot-btn').addEventListener('click', async () => {
+            const email = document.getElementById('forgot-email').value;
+            if (!email) return App.notify('Email required', 'error');
+
+            const btn = document.getElementById('forgot-btn');
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+
+            const success = await Auth.forgotPasswordOTP(email);
+            if (success) {
+                this.renderResetPassword(container, email);
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Send Recovery Code';
+            }
+        });
+
+        document.getElementById('back-to-login').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.renderLogin(container);
+        });
+    },
+
+    renderResetPassword(container, email) {
+        container.innerHTML = `
+            <div class="auth-container">
+                <h2>Secure Key Reset</h2>
+                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 1.5rem; text-align: center;">RECOVERY CODE SENT TO: ${email}</p>
+                <div class="form-group">
+                    <label>OTP Code</label>
+                    <input type="text" id="reset-otp" placeholder="XXXXXX">
+                </div>
+                <div class="form-group">
+                    <label>New Access Key</label>
+                    <div style="position: relative;">
+                        <input type="password" id="reset-password" placeholder="••••••••">
+                        <span class="password-toggle" onclick="App.togglePassword('reset-password')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </span>
+                    </div>
+                </div>
+                <button id="reset-btn" class="btn-primary">Update Access Key</button>
+                <p style="text-align: center; margin-top: 1.5rem; font-size: 0.75rem;">
+                    <a href="#" id="cancel-reset" style="color: var(--accent); text-decoration: none;">Cancel</a>
+                </p>
+            </div>
+        `;
+
+        document.getElementById('reset-btn').addEventListener('click', async () => {
+            const otp = document.getElementById('reset-otp').value;
+            const newPassword = document.getElementById('reset-password').value;
+
+            if (!otp || !newPassword) return App.notify('All fields required', 'error');
+
+            const btn = document.getElementById('reset-btn');
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+
+            const success = await Auth.resetPassword(email, otp, newPassword);
+            if (success) {
+                this.renderLogin(container);
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Update Access Key';
+            }
+        });
+
+        document.getElementById('cancel-reset').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.renderLogin(container);
         });
     },
 
