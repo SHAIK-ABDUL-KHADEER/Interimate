@@ -298,6 +298,23 @@ app.post('/api/reset-password', async (req, res) => {
     }
 });
 
+// 6. Feedback
+app.post('/api/feedback', authenticateToken, async (req, res) => {
+    const { feedback } = req.body;
+    const user = req.user; // From authenticateToken middleware
+
+    if (!feedback) return res.status(400).json({ message: 'Feedback content required' });
+
+    try {
+        const emailText = `New Feedback from ${user.empId}:\n\n${feedback}`;
+        await sendEmail('support@interimate.com', `Interimate Feedback - ${user.empId}`, emailText);
+        res.json({ message: 'Feedback sent successfully! Thank you for the contribution.' });
+    } catch (error) {
+        console.error('Feedback Error:', error);
+        res.status(500).json({ message: 'Failed to send feedback. Please try again later.' });
+    }
+});
+
 // --- QUESTION ROUTES ---
 
 const QUESTION_LIMITS = { quiz: 100, code: 50 };

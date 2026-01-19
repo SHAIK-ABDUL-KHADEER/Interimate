@@ -101,6 +101,9 @@ const App = {
 
     attachGlobalListeners() {
         document.getElementById('nav-dashboard').addEventListener('click', () => this.setState('dashboard'));
+        document.getElementById('nav-interviews').addEventListener('click', () => this.setState('interviews'));
+        document.getElementById('nav-pricing').addEventListener('click', () => this.setState('pricing'));
+        document.getElementById('nav-feedback').addEventListener('click', () => this.setState('feedback'));
         document.getElementById('nav-leaderboard').addEventListener('click', () => this.setState('leaderboard'));
         document.getElementById('nav-logout').addEventListener('click', () => Auth.logout());
     },
@@ -175,6 +178,18 @@ const App = {
             case 'dashboard':
                 if (document.getElementById('nav-dashboard')) document.getElementById('nav-dashboard').classList.add('active');
                 this.renderDashboard(content);
+                break;
+            case 'interviews':
+                if (document.getElementById('nav-interviews')) document.getElementById('nav-interviews').classList.add('active');
+                this.renderInterviews(content);
+                break;
+            case 'pricing':
+                if (document.getElementById('nav-pricing')) document.getElementById('nav-pricing').classList.add('active');
+                this.renderPricing(content);
+                break;
+            case 'feedback':
+                if (document.getElementById('nav-feedback')) document.getElementById('nav-feedback').classList.add('active');
+                this.renderFeedback(content);
                 break;
             case 'leaderboard':
                 if (document.getElementById('nav-leaderboard')) document.getElementById('nav-leaderboard').classList.add('active');
@@ -530,6 +545,100 @@ const App = {
                 </div>
             </div>
         `;
+    },
+
+    renderInterviews(container) {
+        container.innerHTML = `
+            <div style="height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                <div style="font-family: var(--font-mono); color: var(--accent); font-size: 0.8rem; letter-spacing: 0.5em; margin-bottom: 2rem; text-transform: uppercase; opacity: 0.6;">MODULE // CAREER_GENESIS</div>
+                <h1 style="font-size: 6rem; font-weight: 900; color: var(--accent); text-transform: uppercase; letter-spacing: -0.05em; line-height: 0.9;">COMING<br>VERY SOON</h1>
+                <p style="color: var(--text-secondary); max-width: 500px; margin-top: 2rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">The automated interview simulation engine is currently undergoing neural calibration. Prepare for topic-based and resume-synced sessions.</p>
+            </div>
+        `;
+    },
+
+    renderPricing(container) {
+        container.innerHTML = `
+            <div class="pricing-container">
+                <div style="text-align: center; margin-bottom: 4rem;">
+                    <h2 style="font-size: 3rem; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em;">ACCESS PLANS</h2>
+                    <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem;">Select your expertise elevation protocol</p>
+                </div>
+                <div class="pricing-grid">
+                    <div class="pricing-card">
+                        <div class="plan-name">FREE</div>
+                        <div class="plan-price">₹0<span>/mo</span></div>
+                        <ul class="plan-features">
+                            <li>UNLIMITED QUIZ QUESTIONS</li>
+                            <li>UNLIMITED CODE CHALLENGES</li>
+                            <li>1 FREE TOPIC INTERVIEW</li>
+                            <li class="disabled">RESUME-BASED INTERVIEWS</li>
+                            <li class="disabled">3 INTERVIEW SESSIONS</li>
+                        </ul>
+                        <button class="btn-secondary" style="margin-top: auto;">ACTIVE BY DEFAULT</button>
+                    </div>
+                    <div class="pricing-card premium">
+                        <div class="premium-badge">RECOMMENDED</div>
+                        <div class="plan-name">ADVANCED</div>
+                        <div class="plan-price">₹99<span>/life</span></div>
+                        <ul class="plan-features">
+                            <li>UNLIMITED QUIZ QUESTIONS</li>
+                            <li>UNLIMITED CODE CHALLENGES</li>
+                            <li>3 INTERVIEW SESSIONS</li>
+                            <li>RESUME-BASED AI INTERVIEWS</li>
+                            <li>TOPIC-BASED INTERVIEWS</li>
+                        </ul>
+                        <button class="btn-primary" style="margin-top: auto;">UPGRADE NOW</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderFeedback(container) {
+        container.innerHTML = `
+            <div class="auth-container" style="max-width: 600px;">
+                <h2 style="text-align: center;">MISSION FEEDBACK</h2>
+                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 2rem; text-align: center; text-transform: uppercase; letter-spacing: 0.1em;">HELP US CALIBRATE THE SIGMA ENGINE. SUGGEST TOPICS OR IMPROVEMENTS.</p>
+                <div class="form-group">
+                    <label>Transmission Content</label>
+                    <textarea id="feedback-text" placeholder="I would like to see detailed Java Unit Testing topics... Any suggestions for UI improvements like dark mode persistence?"></textarea>
+                </div>
+                <button id="send-feedback-btn" class="btn-primary">SEND TRANSMISSION</button>
+            </div>
+        `;
+
+        document.getElementById('send-feedback-btn').addEventListener('click', async () => {
+            const feedback = document.getElementById('feedback-text').value;
+            if (!feedback) return App.notify('Please enter your feedback', 'error');
+
+            const btn = document.getElementById('send-feedback-btn');
+            btn.disabled = true;
+            btn.textContent = 'TRANSMITTING...';
+
+            try {
+                const res = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeader()
+                    },
+                    body: JSON.stringify({ feedback })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    App.notify(data.message, 'success');
+                    document.getElementById('feedback-text').value = '';
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (err) {
+                App.notify(err.message || 'Transmission failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'SEND TRANSMISSION';
+            }
+        });
     },
 
     async renderLeaderboard(container) {
