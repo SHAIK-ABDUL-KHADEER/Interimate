@@ -52,10 +52,12 @@ app.use((req, res, next) => {
     next();
 });
 
-// Nodemailer Transporter - High Resilience Cloud Config
+// Nodemailer Transporter - Hostinger Professional SMTP
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    pool: true, // Use connection pooling
+    host: 'smtp.hostinger.com',
+    port: 465,
+    secure: true, // Use SSL for Port 465
+    pool: true,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
@@ -63,7 +65,7 @@ const transporter = nodemailer.createTransport({
     connectionTimeout: 20000,
     greetingTimeout: 20000,
     socketTimeout: 30000,
-    debug: true, // Enable verbose logging
+    debug: true,
     logger: true
 });
 

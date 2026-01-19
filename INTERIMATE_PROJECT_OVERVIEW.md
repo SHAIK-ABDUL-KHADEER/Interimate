@@ -3,7 +3,7 @@
 **Developer**: Shaik Abdul Khadeer  
 **Employee ID**: 2457174  
 **Platform**: Render (Cloud Deployment)
-**Deployment URL**: [interimate.onrender.com](https://interimate.onrender.com)
+**Deployment URL**: [interimate.com](https://interimate.com)
 
 ---
 
