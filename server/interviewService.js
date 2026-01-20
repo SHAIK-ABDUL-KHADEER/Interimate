@@ -10,7 +10,7 @@ let genAI = null;
 
 async function getNextInterviewQuestion(interview) {
     if (!genAI) genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
 
     const qCount = interview.history.length + 1;
     let context = "";
@@ -51,7 +51,7 @@ async function getNextInterviewQuestion(interview) {
 
 async function generateFinalReport(interview) {
     if (!genAI) genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
 
     const prompt = `
         You are a Senior Technical Recruiter. Evaluate this candidate based on their 10-question interview session.
