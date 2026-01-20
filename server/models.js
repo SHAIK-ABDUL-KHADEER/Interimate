@@ -6,6 +6,10 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     isVerified: { type: Boolean, default: false },
+    plan: { type: String, default: 'free' }, // free, paid
+    interviewCredits: { type: Number, default: 0 },
+    lastTopicInterview: { type: Date, default: null },
+    lastResumeInterview: { type: Date, default: null },
     createdAt: { type: Date, default: Date.now }
 });
 

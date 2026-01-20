@@ -16,6 +16,13 @@ const crypto = require('crypto');
 const { getNextInterviewQuestion, generateFinalReport } = require('./interviewService');
 const multer = require('multer');
 const pdf = require('pdf-parse');
+const Razorpay = require('razorpay');
+
+// Razorpay Initialization
+const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+    key_secret: process.env.RAZORPAY_KEY_SECRET || 'secret_placeholder'
+});
 
 // Configure Multer for resume uploads
 const storage = multer.memoryStorage();
@@ -553,9 +560,31 @@ app.get('/api/diag', (req, res) => {
 // 7. Interview Engine
 app.post('/api/interview/start', authenticateToken, upload.single('resume'), async (req, res) => {
     const { type, topics, interviewerName } = req.body;
-    const user = req.user;
+    const empId = req.user.empId;
 
     try {
+        const user = await User.findOne({ username: empId });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Guard: Paid plan check for resume
+        if (type === 'resume' && user.plan !== 'paid') {
+            return res.status(403).json({ message: 'Resume interviews are exclusive to paid users.' });
+        }
+
+        // Guard: Credits check
+        if (user.interviewCredits <= 0) {
+            return res.status(403).json({ message: 'No interview credits remaining. Please upgrade your plan.' });
+        }
+
+        // Guard: Daily limit check
+        const today = new Date().setHours(0, 0, 0, 0);
+        if (type === 'topic' && user.lastTopicInterview && new Date(user.lastTopicInterview).setHours(0, 0, 0, 0) === today) {
+            return res.status(403).json({ message: 'Daily limit reached: Only 1 Topic Evaluation per day.' });
+        }
+        if (type === 'resume' && user.lastResumeInterview && new Date(user.lastResumeInterview).setHours(0, 0, 0, 0) === today) {
+            return res.status(403).json({ message: 'Daily limit reached: Only 1 Resume Evaluation per day.' });
+        }
+
         let resumeText = '';
         if (type === 'resume' && req.file) {
             const pdfData = await pdf(req.file.buffer);
@@ -563,7 +592,7 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
         }
 
         const interview = new Interview({
-            username: user.empId,
+            username: empId,
             type,
             topics: type === 'topic' ? JSON.parse(topics) : [],
             resumeText,
@@ -573,9 +602,19 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
 
         const firstQuestion = await getNextInterviewQuestion(interview);
         interview.history.push({ question: firstQuestion.question, answer: null, feedback: firstQuestion.feedback });
-        await interview.save();
 
-        res.json({ interviewId: interview._id, nextQuestion: firstQuestion });
+        // Update user: deduct credit and set last attempt date
+        user.interviewCredits -= 1;
+        if (type === 'topic') user.lastTopicInterview = new Date();
+        else user.lastResumeInterview = new Date();
+
+        await Promise.all([interview.save(), user.save()]);
+
+        res.json({
+            interviewId: interview._id,
+            nextQuestion: firstQuestion,
+            remainingCredits: user.interviewCredits
+        });
     } catch (error) {
         console.error('Interview Start Error:', error);
         res.status(500).json({ message: 'Failed to start interview.' });
@@ -655,6 +694,62 @@ app.get('/api/interview/resume/:id', authenticateToken, async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: 'Error resuming interview' });
+    }
+});
+
+// 8. Payment & Coupons
+app.post('/api/coupon/validate', authenticateToken, (req, res) => {
+    const { code } = req.body;
+    if (code?.toLowerCase() === 'poornima') {
+        return res.json({ valid: true, original: 99, discounted: 9 });
+    }
+    res.status(400).json({ valid: false, message: 'Invalid coupon code' });
+});
+
+app.post('/api/payment/order', authenticateToken, async (req, res) => {
+    const { amount, couponCode } = req.body;
+
+    // Server-side validation of price
+    let finalAmount = 99;
+    if (couponCode?.toLowerCase() === 'poornima') finalAmount = 9;
+
+    const options = {
+        amount: finalAmount * 100, // amount in paisa
+        currency: "INR",
+        receipt: `receipt_${Date.now()}`
+    };
+
+    try {
+        const order = await razorpay.orders.create(options);
+        res.json(order);
+    } catch (error) {
+        console.error('Razorpay Order Error:', error);
+        res.status(500).json({ message: 'Failed to create payment order' });
+    }
+});
+
+app.post('/api/payment/verify', authenticateToken, async (req, res) => {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const empId = req.user.empId;
+
+    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSign = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || 'secret_placeholder')
+        .update(sign.toString())
+        .digest("hex");
+
+    if (razorpay_signature === expectedSign) {
+        try {
+            const user = await User.findOne({ username: empId });
+            user.plan = 'paid';
+            user.interviewCredits += 3; // Add 3 credits
+            await user.save();
+            res.json({ status: "success", message: "Payment verified, 3 credits added!" });
+        } catch (err) {
+            res.status(500).json({ message: "Payment verified but failed to update credits" });
+        }
+    } else {
+        res.status(400).json({ status: "failure", message: "Invalid signature" });
     }
 });
 

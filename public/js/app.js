@@ -6,6 +6,14 @@ const App = {
     isLoading: false,
 
     init() {
+        // Load Razorpay Script
+        if (!document.getElementById('razorpay-sdk')) {
+            const script = document.createElement('script');
+            script.id = 'razorpay-sdk';
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            document.head.appendChild(script);
+        }
+
         this.render();
         this.attachGlobalListeners();
         this.initCursor();
@@ -564,7 +572,7 @@ const App = {
                     <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">User Dashboard</h1>
                     <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); opacity: 0.6; margin-bottom: 1rem;">INTERIMATE // v3.0 [PROD]</div>
                 </div>
-                <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">User: ${Auth.empId} // Cohort: QEA26QE006 // Status: Training in Progress</p>
+                <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">User: ${Auth.empId} // Status: ${this.userProgress.plan === 'paid' ? 'PREMIUM ACCESS' : 'FREE TIER'} // CREDITS: ${this.userProgress.interviewCredits || 0}</p>
             </div>
             <div class="dashboard-grid">
                 ${categories.map(cat => {
@@ -1009,19 +1017,124 @@ const App = {
                     <div class="pricing-card premium">
                         <div class="premium-badge">RECOMMENDED</div>
                         <div class="plan-name">ADVANCED</div>
-                        <div class="plan-price">₹99<span>/life</span></div>
+                        <div class="plan-price" id="plan-price-display">₹99<span>/life</span></div>
                         <ul class="plan-features">
                             <li>UNLIMITED QUIZ QUESTIONS</li>
                             <li>UNLIMITED CODE CHALLENGES</li>
-                            <li>3 INTERVIEW SESSIONS</li>
+                            <li>3 FULL INTERVIEW CREDITS</li>
                             <li>RESUME-BASED AI INTERVIEWS</li>
-                            <li>TOPIC-BASED INTERVIEWS</li>
+                            <li>DAILY LIMIT: 1 TOPIC + 1 RESUME</li>
                         </ul>
-                        <button class="btn-primary" style="margin-top: auto;">UPGRADE NOW</button>
+                        
+                        <div class="coupon-section" style="margin-top: 2rem; border-top: 1px solid #111; padding-top: 1.5rem;">
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="text" id="coupon-code" placeholder="ENTER CODE" style="background: #000; border: 1px solid #222; padding: 0.6rem; color: #fff; font-family: var(--font-mono); font-size: 0.6rem; flex: 1;">
+                                <button class="btn-primary" style="width: auto; padding: 0 1rem; font-size: 0.6rem;" onclick="App.applyCoupon()">APPLY</button>
+                            </div>
+                            <div id="coupon-message" style="font-size: 0.5rem; margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.1em;"></div>
+                        </div>
+
+                        <button class="btn-primary" style="margin-top: 2rem;" id="buy-btn" onclick="App.handlePayment()">UPGRADE TO PREMIUM</button>
                     </div>
                 </div>
             </div>
         `;
+    },
+
+    async applyCoupon() {
+        const code = document.getElementById('coupon-code').value;
+        const msg = document.getElementById('coupon-message');
+        const priceDisplay = document.getElementById('plan-price-display');
+
+        try {
+            const res = await fetch('/api/coupon/validate', {
+                method: 'POST',
+                headers: { ...Auth.getAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                // Animation logic
+                priceDisplay.style.transition = 'all 0.5s ease';
+                priceDisplay.style.transform = 'scale(0.5) translateY(-20px)';
+                priceDisplay.style.opacity = '0';
+
+                setTimeout(() => {
+                    priceDisplay.innerHTML = `₹${data.discounted}<span>/life</span>`;
+                    priceDisplay.style.color = 'var(--accent)';
+                    priceDisplay.style.transform = 'scale(1.2) translateY(0)';
+                    priceDisplay.style.opacity = '1';
+                    priceDisplay.style.textShadow = '0 0 20px var(--accent-glow)';
+
+                    setTimeout(() => {
+                        priceDisplay.style.transform = 'scale(1)';
+                    }, 200);
+                }, 500);
+
+                this.activeCoupon = code;
+                msg.style.color = 'var(--accent)';
+                msg.textContent = 'COUPON APPLIED SUCCESSFULLY!';
+                this.notify('Coupon applied: Price reduced to ₹9', 'success');
+            } else {
+                msg.style.color = 'var(--danger)';
+                msg.textContent = 'INVALID CODE';
+            }
+        } catch (err) {
+            this.notify('Failed to validate coupon', 'error');
+        }
+    },
+
+    async handlePayment() {
+        this.setLoading(true);
+        try {
+            const res = await fetch('/api/payment/order', {
+                method: 'POST',
+                headers: { ...Auth.getAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ couponCode: this.activeCoupon })
+            });
+            const order = await res.json();
+
+            const options = {
+                key: 'rzp_test_placeholder', // Should Ideally come from server or process.env, but for demo:
+                amount: order.amount,
+                currency: "INR",
+                name: "Interimate Premium",
+                description: "Upgrade to Professional Tier",
+                order_id: order.id,
+                handler: async (response) => {
+                    this.setLoading(true);
+                    const verifyRes = await fetch('/api/payment/verify', {
+                        method: 'POST',
+                        headers: { ...Auth.getAuthHeader(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify(response)
+                    });
+                    const verifyData = await verifyRes.json();
+                    this.setLoading(false);
+                    if (verifyRes.ok) {
+                        this.notify(verifyData.message, 'success');
+                        this.setState('dashboard');
+                    } else {
+                        this.notify(verifyData.message, 'error');
+                    }
+                },
+                prefill: {
+                    name: Auth.empId,
+                    email: "support@interimate.com"
+                },
+                theme: {
+                    color: "#d4ff00"
+                }
+            };
+
+            const rzp = new Razorpay(options);
+            rzp.open();
+        } catch (error) {
+            console.error('Payment Error:', error);
+            this.notify('Failed to initialize payment', 'error');
+        } finally {
+            this.setLoading(false);
+        }
     },
 
     renderFeedback(container) {
