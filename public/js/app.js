@@ -632,12 +632,129 @@ const App = {
 
     renderInterviews(container) {
         container.innerHTML = `
-            <div style="height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
-                <div style="font-family: var(--font-mono); color: var(--accent); font-size: 0.8rem; letter-spacing: 0.5em; margin-bottom: 2rem; text-transform: uppercase; opacity: 0.6;">MODULE // CAREER_GENESIS</div>
-                <h1 style="font-size: 6rem; font-weight: 900; color: var(--accent); text-transform: uppercase; letter-spacing: -0.05em; line-height: 0.9;">COMING<br>VERY SOON</h1>
-                <p style="color: var(--text-secondary); max-width: 500px; margin-top: 2rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">The automated interview simulation engine is currently undergoing neural calibration. Prepare for topic-based and resume-synced sessions.</p>
+            <div class="dashboard-header" style="margin-bottom: 4rem;">
+                <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">Interview Engine</h1>
+                <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Select your evaluation protocol // Career Genesis v3.5</p>
+            </div>
+            <div class="dashboard-grid">
+                <!-- Topic Based -->
+                <div class="card interview-card" onclick="App.renderTopicInterviewSetup()">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="card-icon" style="color: var(--accent);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="m5 15 7-7 7 7"/></svg>
+                        </div>
+                        <div style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); padding: 0.2rem 0.5rem; border: 1px solid var(--accent); border-radius: 2px;">VIRTUAL_VIBE</div>
+                    </div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem;">Topic Based</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Select specific topics to test your depth in Java, Selenium, or SQL.</p>
+                </div>
+
+                <!-- Resume Based -->
+                <div class="card interview-card" onclick="App.renderResumeInterviewSetup()">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="card-icon" style="color: var(--accent);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        </div>
+                        <div style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); padding: 0.2rem 0.5rem; border: 1px solid var(--accent); border-radius: 2px;">RESUME_SYNC</div>
+                    </div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem;">Resume Based</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Personalized AI interviews based on your skills and experience levels.</p>
+                </div>
+
+                <!-- Project Based (Coming Soon) -->
+                <div class="card interview-card coming-soon">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="card-icon" style="color: var(--accent);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #555; padding: 0.2rem 0.5rem; border: 1px solid #333; border-radius: 2px;">IN_CALIBRATION</div>
+                    </div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #555;">Project Based</h3>
+                    <p style="color: #444; font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Evaluate your practical implementation by uploading your project repository.</p>
+                </div>
             </div>
         `;
+    },
+
+    renderTopicInterviewSetup() {
+        const content = document.getElementById('content');
+        const topics = ['java', 'selenium', 'sql'];
+        let selectedTopics = [];
+
+        content.innerHTML = `
+            <div class="setup-container">
+                <button class="nav-btn" onclick="App.setState('interviews')" style="margin-bottom: 2rem;">← BACK TO TRACKS</button>
+                <h2 class="setup-title">Topic Selection</h2>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 2rem; text-transform: uppercase; letter-spacing: 0.1em;">Choose one or multiple topics for your evaluation session.</p>
+                
+                <div class="topic-selector">
+                    ${topics.map(t => `<button class="topic-btn" data-topic="${t}" onclick="App.toggleTopicSelection(this)">${t}</button>`).join('')}
+                </div>
+
+                <div class="form-group">
+                    <label>Interviewer Greeting Name</label>
+                    <input type="text" id="interview-name" placeholder="Agent Sigma" value="${Auth.empId || ''}">
+                </div>
+
+                <button class="btn-primary" style="margin-top: 2rem;" onclick="App.startInterview('topic')">START INTERVIEW</button>
+            </div>
+        `;
+    },
+
+    toggleTopicSelection(btn) {
+        btn.classList.toggle('selected');
+    },
+
+    renderResumeInterviewSetup() {
+        const content = document.getElementById('content');
+        content.innerHTML = `
+            <div class="setup-container">
+                <button class="nav-btn" onclick="App.setState('interviews')" style="margin-bottom: 2rem;">← BACK TO TRACKS</button>
+                <h2 class="setup-title">Resume Upload</h2>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 2rem; text-transform: uppercase; letter-spacing: 0.1em;">Upload your resume (PDF/DOCX) to calibrate the AI interviewer.</p>
+                
+                <div class="file-upload-zone" id="resume-dropzone" onclick="document.getElementById('resume-file').click()">
+                    <div style="color: var(--accent); margin-bottom: 1rem;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <p style="font-weight: 700; color: #fff;">Click or Drag Resume Here</p>
+                    <p style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.5rem;">SUPPORTED: PDF, DOCX (MAX 5MB)</p>
+                    <input type="file" id="resume-file" style="display: none;" accept=".pdf,.doc,.docx" onchange="App.handleFileSelect(this)">
+                    <div id="file-info" class="file-info"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Interviewer Greeting Name</label>
+                    <input type="text" id="interview-name" placeholder="Agent Sigma" value="${Auth.empId || ''}">
+                </div>
+
+                <button class="btn-primary" style="margin-top: 2rem;" onclick="App.startInterview('resume')">START INTERVIEW</button>
+            </div>
+        `;
+    },
+
+    handleFileSelect(input) {
+        const info = document.getElementById('file-info');
+        if (input.files && input.files[0]) {
+            info.textContent = `SELECTED: ${input.files[0].name.toUpperCase()}`;
+        }
+    },
+
+    startInterview(type) {
+        const name = document.getElementById('interview-name').value;
+        if (!name) return this.notify('Please enter your name', 'error');
+
+        if (type === 'topic') {
+            const selected = Array.from(document.querySelectorAll('.topic-btn.selected')).map(b => b.dataset.topic);
+            if (selected.length === 0) return this.notify('Please select at least one topic', 'error');
+            console.log('Starting topic interview for:', name, 'Topics:', selected);
+        } else if (type === 'resume') {
+            const file = document.getElementById('resume-file').files[0];
+            if (!file) return this.notify('Please upload your resume', 'error');
+            console.log('Starting resume interview for:', name, 'File:', file.name);
+        }
+
+        this.notify('System calibrating... Interview logic implementation pending.', 'info');
     },
 
     renderPricing(container) {

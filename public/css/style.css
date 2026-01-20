@@ -746,6 +746,113 @@ main {
     background: var(--accent);
 }
 
+/* Interviews Section Expansion */
+.interview-card {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.interview-card.coming-soon:hover::after {
+    content: 'COMING SOON';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 950;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    letter-spacing: 0.3em;
+    backdrop-filter: blur(5px);
+    z-index: 5;
+    animation: fadeIn 0.3s ease;
+}
+
+.setup-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 3rem;
+    background: rgba(5, 5, 5, 0.6);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    border-radius: 4px;
+}
+
+.setup-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+    margin-bottom: 2rem;
+}
+
+.topic-selector {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+}
+
+.topic-btn {
+    padding: 0.8rem 1.5rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.topic-btn:hover {
+    border-color: var(--accent);
+}
+
+.topic-btn.selected {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 800;
+    box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.file-upload-zone {
+    border: 2px dashed var(--border);
+    padding: 3rem;
+    text-align: center;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.file-upload-zone:hover {
+    border-color: var(--accent);
+    background: rgba(212, 255, 0, 0.02);
+}
+
+.file-upload-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(212, 255, 0, 0.05);
+}
+
+.file-info {
+    margin-top: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 800;
+}
+
 .feedback-box {
     padding: 1.5rem;
     border: 1px solid var(--border);
