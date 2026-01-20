@@ -15,6 +15,19 @@ const Quiz = {
         this.render(); // Show loading state
         await this.loadQuestions();
         this.loading = false;
+
+        // --- AUTO-RESUME LOGIC ---
+        const currentQuestions = this.questions[this.section] || [];
+        let firstUnsolved = 0;
+        for (let i = 0; i < currentQuestions.length; i++) {
+            if (!this.isQuestionCompleted(currentQuestions[i].id)) {
+                firstUnsolved = i;
+                break;
+            }
+            firstUnsolved = i; // If all solved, point to the last one
+        }
+        this.currentIndex = firstUnsolved;
+
         this.render();
     },
 
@@ -90,14 +103,27 @@ const Quiz = {
                         <button class="tab-btn ${this.section === 'practice' ? 'active' : ''}" onclick="Quiz.setSection('practice')">Practice</button>
                     </div>
                     <div class="q-navigation" style="margin-top: 1rem;">
-                        <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); margin-right: 1rem;">QUESTION ${this.currentIndex + 1} / ${currentQuestions.length}</span>
-                        <select id="q-jump" onchange="Quiz.jumpTo(this.value)" style="background: #000; color: var(--accent); border: 1px solid var(--border); padding: 0.2rem; cursor: pointer;">
-                            ${currentQuestions.map((q, i) => {
-            const prog = App.userProgress[this.category]?.[this.section]?.[q.id];
-            const isCorrect = prog && prog.status === 'correct';
-            return `<option value="${i}" ${i === this.currentIndex ? 'selected' : ''}>QUESTION ${i + 1} ${isCorrect ? '✓' : ''}</option>`;
+                        <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); margin-right: 1.5rem;">PROGRESS: ${currentQuestions.filter(q => this.isQuestionCompleted(q.id)).length} / ${currentQuestions.length}</span>
+                        
+                        <!-- Custom Dropdown (Dropbox) -->
+                        <div class="custom-dropdown" id="q-dropdown">
+                            <button class="dropdown-trigger" onclick="Quiz.toggleDropdown()">
+                                <span>QUESTION ${this.currentIndex + 1}</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </button>
+                            <div class="dropdown-menu" id="q-dropdown-menu">
+                                ${currentQuestions.map((q, i) => {
+            const isCorrect = this.isQuestionCompleted(q.id);
+            return `
+                                        <div class="dropdown-item ${i === this.currentIndex ? 'active' : ''}" onclick="Quiz.jumpTo(${i})">
+                                            <span class="q-num">#${(i + 1).toString().padStart(2, '0')}</span>
+                                            <span class="q-title">${q.title || q.question.substring(0, 30) + '...'}</span>
+                                            ${isCorrect ? '<span class="q-status">✓</span>' : ''}
+                                        </div>
+                                    `;
         }).join('')}
-                        </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -356,5 +382,29 @@ const Quiz = {
     jumpTo(index) {
         this.currentIndex = parseInt(index);
         this.render();
+    },
+
+    toggleDropdown() {
+        const menu = document.getElementById('q-dropdown-menu');
+        const trigger = document.querySelector('.dropdown-trigger');
+        if (menu) {
+            const isOpen = menu.classList.contains('show');
+            // Close all first
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+            document.querySelectorAll('.dropdown-trigger').forEach(t => t.classList.remove('open'));
+
+            if (!isOpen) {
+                menu.classList.add('show');
+                trigger.classList.add('open');
+            }
+        }
     }
 };
+
+// Close dropdown on click outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#q-dropdown')) {
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+        document.querySelectorAll('.dropdown-trigger').forEach(t => t.classList.remove('open'));
+    }
+});
