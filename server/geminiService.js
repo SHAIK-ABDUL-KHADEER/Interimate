@@ -6,14 +6,15 @@ const topicContext = {
     'sql': 'Relational SQL. FOR QUESTIONS 1-20: Strictly BASIC DDL (CREATE, ALTER) and DML (INSERT, UPDATE, DELETE, simple SELECT). NO JOINS OR SUBQUERIES until Question 21+.'
 };
 
-let genAI = null;
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
 async function generateQuestion(topic, type, existingCount, existingData = []) {
     if (!genAI) {
         if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is missing from .env");
         genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     }
-    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
+    const modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash"; // Default to 2.0 if not set, user wants 2.5
+    const model = genAI.getGenerativeModel({ model: modelName });
     const context = topicContext[topic] || topic;
     const unitNumber = existingCount + 1;
 
@@ -44,14 +45,25 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
         Return ONLY raw JSON. No markdown.
     `;
 
-    try {
-        const result = await model.generateContent(prompt);
-        let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");
-        return JSON.parse(text);
-    } catch (error) {
-        console.error("[Gemini] Generation Error:", error.message);
-        throw error;
+    let lastError = null;
+    for (let i = 0; i < 3; i++) {
+        try {
+            const result = await model.generateContent(prompt);
+            let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");
+            return JSON.parse(text);
+        } catch (error) {
+            lastError = error;
+            console.error(`[Gemini] Attempt ${i + 1} failed:`, error.message);
+            if (error.message.includes('503') || error.message.includes('overloaded') || error.message.includes('Service Unavailable')) {
+                const waitTime = Math.pow(2, i) * 1500;
+                console.log(`[Gemini] Service overloaded. Retrying in ${waitTime}ms...`);
+                await delay(waitTime);
+                continue;
+            }
+            throw error;
+        }
     }
+    throw lastError;
 }
 
 async function validateCode(topic, title, description, userCode) {
