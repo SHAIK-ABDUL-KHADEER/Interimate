@@ -529,12 +529,25 @@ app.post('/api/progress', authenticateToken, async (req, res) => {
             p.categories[category].lastVisited.practice = questionId;
         }
 
+        // 6. Progress Management (rest)
         await p.save();
         res.json({ message: 'Progress updated' });
     } catch (error) {
         console.error('Progress Update Error:', error);
         res.status(500).json({ message: 'Failed to update progress' });
     }
+});
+
+// 6.5 Diagnostic Endpoint
+app.get('/api/diag', (req, res) => {
+    res.json({
+        time: new Date().toISOString(),
+        model: process.env.GEMINI_MODEL || 'N/A',
+        key_exists: !!process.env.GEMINI_API_KEY,
+        db_status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        node_version: process.version,
+        uptime: process.uptime()
+    });
 });
 
 // 7. Interview Engine
@@ -648,3 +661,14 @@ if (EXTERNAL_URL) {
         });
     }, 14 * 60 * 1000); // 14 mins
 }
+
+// Global UNHANDLED REJECTION handler
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('@@@ UNHANDLED_REJECTION @@@');
+    console.error('Reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('@@@ UNCAUGHT_EXCEPTION @@@');
+    console.error(err);
+});

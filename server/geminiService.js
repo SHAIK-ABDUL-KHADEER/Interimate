@@ -14,7 +14,7 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
         if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is missing from .env");
         genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     }
-    const modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash"; // Default to 2.0 if not set, user wants 2.5
+    const modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash"; // Consolidated stable fallback
     const model = genAI.getGenerativeModel({ model: modelName });
     const context = topicContext[topic] || topic;
     const unitNumber = existingCount + 1;
@@ -69,7 +69,7 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
 
 async function validateCode(topic, title, description, userCode) {
     if (!genAI) genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-1.5-flash" });
 
     const prompt = `
         System: You are a strict technical interviewer but lenient on minor typos. 
