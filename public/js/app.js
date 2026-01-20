@@ -54,20 +54,20 @@ const App = {
             mouseX = e.clientX;
             mouseY = e.clientY;
 
-            dot.style.left = `${mouseX}px`;
-            dot.style.top = `${mouseY}px`;
+            // Use translate3d for better performance + keep centering
+            dot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
         });
 
-        // Smooth trailing effect for outline
+        // Smoother trailing effect
         const animateOutline = () => {
             const distX = mouseX - outlineX;
             const distY = mouseY - outlineY;
 
-            outlineX += distX * 0.15;
-            outlineY += distY * 0.15;
+            // Faster interpolation for less lag
+            outlineX += distX * 0.25;
+            outlineY += distY * 0.25;
 
-            outline.style.left = `${outlineX}px`;
-            outline.style.top = `${outlineY}px`;
+            outline.style.transform = `translate3d(${outlineX}px, ${outlineY}px, 0) translate(-50%, -50%)`;
 
             requestAnimationFrame(animateOutline);
         };
@@ -209,14 +209,14 @@ const App = {
     renderLanding(container) {
         container.innerHTML = `
             <div class="hero">
-                <div class="hero-subtitle">Artificial Intelligence • Professional Intelligence</div>
+                <div class="hero-subtitle">Artificial Intelligence • Career Guidance</div>
                 <h1 class="hero-title">Evolve Your<br>Expertise</h1>
                 <p style="color: var(--text-secondary); max-width: 600px; margin-bottom: 3rem; font-size: 1.1rem;">
                     The next-generation QEA preparation platform. Deep-dive into Java, Selenium, and SQL with AI-driven surgical feedback.
                 </p>
                 <div class="cta-group">
-                    <button class="btn-primary" style="width: auto; padding: 1.2rem 3rem;" onclick="App.setState('register')">INITIALIZE PROTOCOL</button>
-                    <button class="btn-secondary" style="width: auto; padding: 1.2rem 3rem;" onclick="App.setState('login')">OPERATIVE LOGIN</button>
+                    <button class="btn-primary" style="width: auto; padding: 1.2rem 3rem;" onclick="App.setState('register')">REGISTER NOW</button>
+                    <button class="btn-secondary" style="width: auto; padding: 1.2rem 3rem;" onclick="App.setState('login')">USER LOGIN</button>
                 </div>
 
                 <div class="landing-grid">
@@ -257,11 +257,11 @@ const App = {
                         <a href="#" id="toggle-forgot" style="font-size: 0.65rem; color: var(--accent); text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em;">Forgot Access Key?</a>
                     </div>
                 </div>
-                <button id="login-btn" class="btn-primary">Authenticate</button>
+                <button id="login-btn" class="btn-primary">Login Now</button>
                 <p style="text-align: center; margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                    New operative? <a href="#" id="toggle-register" style="color: var(--accent); text-decoration: none;">Initialize Account</a>
+                    New user? <a href="#" id="toggle-register" style="color: var(--accent); text-decoration: none;">Create Account</a>
                 </p>
-                <button class="btn-secondary" style="margin-top: 1rem; width: 100%;" onclick="App.setState('landing')">Return to Landing</button>
+                <button class="btn-secondary" style="margin-top: 1rem; width: 100%;" onclick="App.setState('landing')">Return to Home</button>
             </div>
         `;
 
@@ -286,7 +286,7 @@ const App = {
     renderForgotPassword(container) {
         container.innerHTML = `
             <div class="auth-container">
-                <h2>Portal Access Recovery</h2>
+                <h2>Reset Password</h2>
                 <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 1.5rem; text-align: center;">ENTER YOUR REGISTERED EMAIL TO RECEIVE A RECOVERY CODE.</p>
                 <div class="form-group">
                     <label>Email Address</label>
@@ -325,7 +325,7 @@ const App = {
     renderResetPassword(container, email) {
         container.innerHTML = `
             <div class="auth-container">
-                <h2>Secure Key Reset</h2>
+                <h2>Set New Password</h2>
                 <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 1.5rem; text-align: center;">RECOVERY CODE SENT TO: ${email}</p>
                 <div class="form-group">
                     <label>OTP Code</label>
@@ -375,7 +375,7 @@ const App = {
     renderRegister(container) {
         container.innerHTML = `
             <div class="auth-container">
-                <h2>Initialize Account</h2>
+                <h2>Register Account</h2>
                 <div class="form-group">
                     <label>Username (Unique ID)</label>
                     <input type="text" id="reg-username" placeholder="Agent_Sigma">
@@ -478,10 +478,10 @@ const App = {
         container.innerHTML = `
             <div class="dashboard-header" style="margin-bottom: 4rem;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-                    <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">Command Center</h1>
-                    <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); opacity: 0.6; margin-bottom: 1rem;">SIGMA // v3.0 [PROD]</div>
+                    <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">User Dashboard</h1>
+                    <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); opacity: 0.6; margin-bottom: 1rem;">INTERIMATE // v3.0 [PROD]</div>
                 </div>
-                <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Operative: ${Auth.empId} // Cohort: QEA26QE006 // Status: Training in Progress</p>
+                <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">User: ${Auth.empId} // Cohort: QEA26QE006 // Status: Training in Progress</p>
             </div>
             <div class="dashboard-grid">
                 ${categories.map(cat => {
@@ -520,7 +520,7 @@ const App = {
         const categoryName = this.currentCategory.toUpperCase();
         container.innerHTML = `
             <div class="dashboard-header" style="margin-bottom: 4rem;">
-                <button class="nav-btn" onclick="App.setState('dashboard')" style="margin-bottom: 1rem;">← BACK TO TERMINAL</button>
+                <button class="nav-btn" onclick="App.setState('dashboard')" style="margin-bottom: 1rem;">← BACK TO DASHBOARD</button>
                 <h1 style="font-size: 3rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">${categoryName} // SELECTION</h1>
                 <p style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Choose your specialization track</p>
             </div>
@@ -649,7 +649,7 @@ const App = {
             container.innerHTML = `
                 <div class="leaderboard-container">
                     <div class="dashboard-header" style="margin-bottom: 4rem;">
-                        <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">Top Operatives</h1>
+                        <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">User Rankings</h1>
                         <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Global Performance Rankings</p>
                     </div>
                     <div class="mcq-card">
@@ -677,7 +677,7 @@ const App = {
                             </tbody>
                         </table>
                     </div>
-                    <button class="btn-primary" style="margin-top: 3rem; width: auto; padding: 1rem 3rem;" onclick="App.setState('dashboard')">RETURN TO TERMINAL</button>
+                    <button class="btn-primary" style="margin-top: 3rem; width: auto; padding: 1rem 3rem;" onclick="App.setState('dashboard')">RETURN TO DASHBOARD</button>
                 </div>
             `;
         } catch (error) {

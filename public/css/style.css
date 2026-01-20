@@ -71,7 +71,7 @@ textarea,
     border-radius: 50%;
     z-index: 9999;
     pointer-events: none;
-    transition: all 0.2s cubic-bezier(0.19, 1, 0.22, 1);
+    transition: width 0.3s, height 0.3s, opacity 0.3s, border-color 0.3s;
     opacity: 0.8;
     mix-blend-mode: difference;
 }
