@@ -11,8 +11,24 @@ const { generateQuestion, validateCode } = require('./geminiService');
 const fs = require('fs').promises;
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
-const { User, Question, Progress, OTP } = require('./models');
+const { User, Question, Progress, OTP, Interview } = require('./models');
 const crypto = require('crypto');
+const { getNextInterviewQuestion, generateFinalReport } = require('./interviewService');
+const multer = require('multer');
+const pdf = require('pdf-parse');
+
+// Configure Multer for resume uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['.pdf', '.doc', '.docx'];
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (allowedTypes.includes(ext)) cb(null, true);
+        else cb(new Error('Invalid file type. Only PDF and DOCX supported.'));
+    }
+});
 
 const app = express();
 const PORT = process.env.PORT || 3005; // DYNAMIC PORT FOR RENDER
@@ -518,6 +534,81 @@ app.post('/api/progress', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Progress Update Error:', error);
         res.status(500).json({ message: 'Failed to update progress' });
+    }
+});
+
+// 7. Interview Engine
+app.post('/api/interview/start', authenticateToken, upload.single('resume'), async (req, res) => {
+    const { type, topics, interviewerName } = req.body;
+    const user = req.user;
+
+    try {
+        let resumeText = '';
+        if (type === 'resume' && req.file) {
+            const pdfData = await pdf(req.file.buffer);
+            resumeText = pdfData.text;
+        }
+
+        const interview = new Interview({
+            username: user.empId,
+            type,
+            topics: type === 'topic' ? JSON.parse(topics) : [],
+            resumeText,
+            interviewerName: interviewerName || 'Agent Sigma',
+            status: 'active'
+        });
+
+        const firstQuestion = await getNextInterviewQuestion(interview);
+        interview.history.push({ question: firstQuestion.question, answer: null, feedback: firstQuestion.feedback });
+        await interview.save();
+
+        res.json({ interviewId: interview._id, nextQuestion: firstQuestion });
+    } catch (error) {
+        console.error('Interview Start Error:', error);
+        res.status(500).json({ message: 'Failed to start interview.' });
+    }
+});
+
+app.post('/api/interview/next', authenticateToken, async (req, res) => {
+    const { interviewId, answer } = req.body;
+
+    try {
+        const interview = await Interview.findById(interviewId);
+        if (!interview) return res.status(404).json({ message: 'Interview not found' });
+        if (interview.status === 'completed') return res.status(400).json({ message: 'Interview already completed' });
+
+        // Update the last question with the user's answer
+        const lastEntry = interview.history[interview.history.length - 1];
+        lastEntry.answer = answer;
+
+        if (interview.history.length >= 10) {
+            interview.status = 'completed';
+            const report = await generateFinalReport(interview);
+            interview.report = report;
+            await interview.save();
+            return res.json({ status: 'completed', report });
+        }
+
+        const nextQuestion = await getNextInterviewQuestion(interview);
+        interview.history.push({ question: nextQuestion.question, answer: null, feedback: nextQuestion.feedback });
+        await interview.save();
+
+        res.json({ status: 'active', nextQuestion });
+    } catch (error) {
+        console.error('Interview Next Error:', error);
+        res.status(500).json({ message: 'Failed to process answer.' });
+    }
+});
+
+app.get('/api/interview/report/:id', authenticateToken, async (req, res) => {
+    try {
+        const interview = await Interview.findById(req.params.id);
+        if (!interview || interview.report === null) {
+            return res.status(404).json({ message: 'Report not ready or missing' });
+        }
+        res.json(interview.report);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching report' });
     }
 });
 

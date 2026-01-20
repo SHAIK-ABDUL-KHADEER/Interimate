@@ -740,21 +740,161 @@ const App = {
         }
     },
 
-    startInterview(type) {
+    async startInterview(type) {
         const name = document.getElementById('interview-name').value;
         if (!name) return this.notify('Please enter your name', 'error');
+
+        const formData = new FormData();
+        formData.append('type', type);
+        formData.append('interviewerName', name);
 
         if (type === 'topic') {
             const selected = Array.from(document.querySelectorAll('.topic-btn.selected')).map(b => b.dataset.topic);
             if (selected.length === 0) return this.notify('Please select at least one topic', 'error');
-            console.log('Starting topic interview for:', name, 'Topics:', selected);
+            formData.append('topics', JSON.stringify(selected));
         } else if (type === 'resume') {
-            const file = document.getElementById('resume-file').files[0];
-            if (!file) return this.notify('Please upload your resume', 'error');
-            console.log('Starting resume interview for:', name, 'File:', file.name);
+            const fileInput = document.getElementById('resume-file');
+            if (!fileInput.files[0]) return this.notify('Please upload your resume', 'error');
+            formData.append('resume', fileInput.files[0]);
         }
 
-        this.notify('System calibrating... Interview logic implementation pending.', 'info');
+        this.setLoading(true);
+        try {
+            // Remove Content-Type header if it exists because FormData needs its own boundary
+            const headers = Auth.getAuthHeader();
+            delete headers['Content-Type'];
+
+            const res = await fetch('/api/interview/start', {
+                method: 'POST',
+                headers: headers,
+                body: formData
+            });
+
+            if (!res.ok) throw new Error('Failed to start interview');
+            const data = await res.json();
+            this.currentInterviewId = data.interviewId;
+            this.currentQuestionCount = 1;
+            this.setLoading(false);
+            this.renderInterviewSession(data.nextQuestion);
+        } catch (error) {
+            console.error('Start Interview Error:', error);
+            this.setLoading(false);
+            this.notify('Failed to start interview system.', 'error');
+        }
+    },
+
+    renderInterviewSession(data) {
+        const content = document.getElementById('content');
+        const isCode = data.isCodeRequired;
+
+        content.innerHTML = `
+            <div class="setup-container" style="max-width: 1000px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); letter-spacing: 0.2em;">PROTOCOL // SESSION_ACTIVE</div>
+                    <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">${this.currentQuestionCount} / 10</div>
+                </div>
+
+                ${data.feedback ? `
+                    <div class="feedback-box revealed" style="margin-bottom: 2rem; border-left-color: var(--accent);">
+                        <span style="font-size: 0.7rem; color: var(--accent); display: block; margin-bottom: 0.5rem; letter-spacing: 0.1em;">INTERVIEWER_FEEDBACK:</span>
+                        ${data.feedback}
+                    </div>
+                ` : ''}
+
+                <div class="question-text" style="font-size: 1.5rem; margin-bottom: 2rem; line-height: 1.5;">
+                    ${data.question}
+                </div>
+
+                <div class="form-group">
+                    <label>${isCode ? 'IMPLEMENTATION_EDITOR' : 'RESPONSE_TERMINAL'}</label>
+                    ${isCode ?
+                `<textarea id="interview-answer" class="code-editor" placeholder="Write your code solution here..." style="height: 300px;"></textarea>` :
+                `<textarea id="interview-answer" class="code-editor" placeholder="Type your detailed answer here..." style="height: 200px; color: #fff;"></textarea>`
+            }
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <button class="btn-primary" id="submit-answer-btn" onclick="App.submitInterviewAnswer()">SUBMIT RESPONSE</button>
+                </div>
+            </div>
+        `;
+    },
+
+    async submitInterviewAnswer() {
+        const answer = document.getElementById('interview-answer').value;
+        if (!answer || answer.trim().length < 5) return this.notify('Please provide a more detailed answer', 'warning');
+
+        const btn = document.getElementById('submit-answer-btn');
+        btn.disabled = true;
+        btn.textContent = 'TRANSMITTING...';
+        this.setLoading(true);
+
+        try {
+            const res = await fetch('/api/interview/next', {
+                method: 'POST',
+                headers: { ...Auth.getAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ interviewId: this.currentInterviewId, answer })
+            });
+
+            if (!res.ok) throw new Error('Failed to submit answer');
+            const data = await res.json();
+
+            if (data.status === 'completed') {
+                this.renderInterviewReport(data.report);
+            } else {
+                this.currentQuestionCount++;
+                this.renderInterviewSession(data.nextQuestion);
+            }
+        } catch (error) {
+            console.error('Submit Answer Error:', error);
+            this.notify('Technical error during transmission.', 'error');
+            btn.disabled = false;
+            btn.textContent = 'SUBMIT RESPONSE';
+        } finally {
+            this.setLoading(false);
+        }
+    },
+
+    renderInterviewReport(report) {
+        const content = document.getElementById('content');
+        content.innerHTML = `
+            <div class="setup-container" style="max-width: 900px; text-align: left;">
+                <h1 style="font-size: 3rem; font-weight: 900; color: var(--accent); text-transform: uppercase; margin-bottom: 1rem;">Evaluation Report</h1>
+                <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.7rem; margin-bottom: 3rem;">Session Protocol // Termination_Success</p>
+
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; margin-bottom: 3rem;">
+                    <div style="text-align: center; padding: 2rem; border: 1px solid var(--accent); border-radius: 4px; background: rgba(212, 255, 0, 0.05);">
+                        <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); margin-bottom: 1rem;">SIGMA_SCORE</div>
+                        <div style="font-size: 5rem; font-weight: 950; color: var(--accent);">${report.score}</div>
+                        <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary);">OUT OF 10</div>
+                    </div>
+                    <div>
+                        <h3 style="color: #fff; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem;">Summary Assessment</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">${report.summary}</p>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+                    <div class="explanation-box" style="border-left-color: var(--success); background: rgba(0, 255, 102, 0.02);">
+                        <h4 style="color: var(--success);">Core Strengths</h4>
+                        <ul style="color: var(--text-secondary); font-size: 0.85rem; padding-left: 1rem; line-height: 1.8;">
+                            ${report.strengths.map(s => `<li>${s}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="explanation-box" style="border-left-color: var(--danger); background: rgba(255, 0, 51, 0.02);">
+                        <h4 style="color: var(--danger);">Growth Zones</h4>
+                        <ul style="color: var(--text-secondary); font-size: 0.85rem; padding-left: 1rem; line-height: 1.8;">
+                            ${report.improvements.map(i => `<li>${i}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn-primary" onclick="App.setState('dashboard')" style="width: auto;">BACK TO DASHBOARD</button>
+                    <button class="btn-secondary" onclick="App.setState('interviews')" style="width: auto;">NEW INTERVIEW</button>
+                </div>
+            </div>
+        `;
     },
 
     renderPricing(container) {

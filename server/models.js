@@ -30,9 +30,23 @@ const progressSchema = new mongoose.Schema({
     categories: { type: Object, default: {} } // Stores { java: { mcq: {...}, practice: {...} }, ... }
 });
 
+// Interview Schema
+const interviewSchema = new mongoose.Schema({
+    username: { type: String, required: true },
+    type: { type: String, required: true }, // topic, resume
+    topics: { type: [String], default: [] },
+    resumeText: { type: String, default: '' },
+    interviewerName: { type: String, default: 'Agent Sigma' },
+    history: { type: [Object], default: [] }, // [{ question, answer, feedback }]
+    status: { type: String, default: 'active' }, // active, completed
+    report: { type: Object, default: null }, // { strengths, improvements, score }
+    createdAt: { type: Date, default: Date.now }
+});
+
 const User = mongoose.model('User', userSchema);
 const Question = mongoose.model('Question', questionSchema);
 const Progress = mongoose.model('Progress', progressSchema);
 const OTP = mongoose.model('OTP', otpSchema);
+const Interview = mongoose.model('Interview', interviewSchema);
 
-module.exports = { User, Question, Progress, OTP };
+module.exports = { User, Question, Progress, OTP, Interview };
