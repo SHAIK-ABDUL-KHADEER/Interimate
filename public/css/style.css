@@ -450,6 +450,35 @@ main {
     gap: 2.5rem;
 }
 
+}
+
+.card.paid-only::before {
+    content: 'EXCLUSIVE TO PAID USERS';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--accent);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    z-index: 50;
+    pointer-events: none;
+    letter-spacing: 0.3em;
+    backdrop-filter: blur(4px);
+}
+
+.card.paid-only:hover::before {
+    opacity: 1;
+}
+
 .card {
     background-color: var(--bg-card);
     border: 1px solid var(--border);
