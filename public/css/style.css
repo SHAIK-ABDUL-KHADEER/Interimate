@@ -1066,3 +1066,46 @@ footer {
     border-color: var(--accent);
     box-shadow: 0 0 20px rgba(0, 255, 102, 0.1);
 }
+
+/* Cursor Loading Animation */
+@keyframes cursorSpin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes cursorPulse {
+
+    0%,
+    100% {
+        border-width: 1.5px;
+        opacity: 0.8;
+    }
+
+    50% {
+        border-width: 3px;
+        opacity: 1;
+        border-color: #fff;
+    }
+}
+
+.cursor-outline.loading::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border: 2px dashed var(--accent);
+    border-radius: 50%;
+    animation: cursorSpin 1s linear infinite;
+}
+
+.cursor-outline.loading {
+    animation: cursorPulse 1s ease-in-out infinite;
+    mix-blend-mode: normal;
+}

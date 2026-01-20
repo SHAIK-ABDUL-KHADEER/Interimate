@@ -3,6 +3,7 @@ const App = {
     currentCategory: null,
     currentSection: null, // mcq, practice
     userProgress: {},
+    isLoading: false,
 
     init() {
         this.render();
@@ -10,6 +11,15 @@ const App = {
         this.initCursor();
         window.addEventListener('popstate', (e) => this.handlePopState(e));
         history.replaceState({ state: this.currentState, params: {} }, '');
+    },
+
+    setLoading(loading) {
+        this.isLoading = loading;
+        const outline = document.querySelector('.cursor-outline');
+        if (outline) {
+            if (loading) outline.classList.add('loading');
+            else outline.classList.remove('loading');
+        }
     },
 
     notify(message, type = 'info') {
@@ -110,9 +120,11 @@ const App = {
 
     async setState(state, params = {}, pushHistory = true) {
         this.currentState = state;
+        this.setLoading(true);
         if (state === 'dashboard' || state === 'leaderboard' || state === 'selection') {
             await this.loadProgress();
         }
+        this.setLoading(false);
         if (state === 'selection' || state === 'quiz') {
             this.currentCategory = params.category || this.currentCategory;
             this.currentSection = params.section || null;
@@ -233,6 +245,37 @@ const App = {
                         <p>From bedrock DDL to complex relational synthesis.</p>
                     </div>
                 </div>
+
+                <!-- Landing Page Pricing -->
+                <div class="pricing-container" style="margin-top: 8rem; border-top: 1px solid var(--border); padding-top: 6rem;">
+                    <div style="text-align: center; margin-bottom: 4rem;">
+                        <h2 style="font-size: 2.5rem; font-weight: 900; text-transform: uppercase;">Plans & Pricing</h2>
+                        <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem;">Select your expertise elevation protocol</p>
+                    </div>
+                    <div class="pricing-grid">
+                        <div class="pricing-card">
+                            <div class="plan-name">FREE</div>
+                            <div class="plan-price">₹0<span>/mo</span></div>
+                            <ul class="plan-features">
+                                <li>UNLIMITED QUIZ QUESTIONS</li>
+                                <li>UNLIMITED CODE CHALLENGES</li>
+                                <li>1 FREE TOPIC INTERVIEW</li>
+                            </ul>
+                            <button class="btn-secondary" style="margin-top: auto;" onclick="App.setState('register')">START FOR FREE</button>
+                        </div>
+                        <div class="pricing-card premium">
+                            <div class="premium-badge">RECOMMENDED</div>
+                            <div class="plan-name">ADVANCED</div>
+                            <div class="plan-price">₹99<span>/life</span></div>
+                            <ul class="plan-features">
+                                <li>UNLIMITED EVERYTHING</li>
+                                <li>RESUME-BASED AI INTERVIEWS</li>
+                                <li>3 FULL INTERVIEW SESSIONS</li>
+                            </ul>
+                            <button class="btn-primary" style="margin-top: auto;" onclick="App.setState('register')">GET FULL ACCESS</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     },
@@ -240,13 +283,13 @@ const App = {
     renderLogin(container) {
         container.innerHTML = `
             <div class="auth-container">
-                <h2>Operative Login</h2>
+                <h2>User Login</h2>
                 <div class="form-group">
                     <label>Email Address</label>
-                    <input type="email" id="login-email" placeholder="agent@interimate.io">
+                    <input type="email" id="login-email" placeholder="user@interimate.io">
                 </div>
                 <div class="form-group">
-                    <label>Access Key</label>
+                    <label>Password</label>
                     <div style="position: relative;">
                         <input type="password" id="login-password" placeholder="••••••••">
                         <span class="password-toggle" onclick="App.togglePassword('login-password')">
@@ -254,7 +297,7 @@ const App = {
                         </span>
                     </div>
                     <div style="text-align: right; margin-top: 5px;">
-                        <a href="#" id="toggle-forgot" style="font-size: 0.65rem; color: var(--accent); text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em;">Forgot Access Key?</a>
+                        <a href="#" id="toggle-forgot" style="font-size: 0.65rem; color: var(--accent); text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em;">Forgot Password?</a>
                     </div>
                 </div>
                 <button id="login-btn" class="btn-primary">Login Now</button>
@@ -268,7 +311,9 @@ const App = {
         document.getElementById('login-btn').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
+            this.setLoading(true);
             const success = await Auth.login(email, password);
+            this.setLoading(false);
             if (success) this.setState('dashboard');
         });
 
@@ -332,7 +377,7 @@ const App = {
                     <input type="text" id="reset-otp" placeholder="XXXXXX">
                 </div>
                 <div class="form-group">
-                    <label>New Access Key</label>
+                    <label>New Password</label>
                     <div style="position: relative;">
                         <input type="password" id="reset-password" placeholder="••••••••">
                         <span class="password-toggle" onclick="App.togglePassword('reset-password')">
@@ -340,7 +385,7 @@ const App = {
                         </span>
                     </div>
                 </div>
-                <button id="reset-btn" class="btn-primary">Update Access Key</button>
+                <button id="reset-btn" class="btn-primary">Update Password</button>
                 <p style="text-align: center; margin-top: 1.5rem; font-size: 0.75rem;">
                     <a href="#" id="cancel-reset" style="color: var(--accent); text-decoration: none;">Cancel</a>
                 </p>
@@ -358,11 +403,12 @@ const App = {
             btn.textContent = 'Updating...';
 
             const success = await Auth.resetPassword(email, otp, newPassword);
+            this.setLoading(false);
             if (success) {
                 this.renderLogin(container);
             } else {
                 btn.disabled = false;
-                btn.textContent = 'Update Access Key';
+                btn.textContent = 'Update Password';
             }
         });
 
@@ -392,7 +438,7 @@ const App = {
                     <input type="text" id="reg-otp" placeholder="XXXXXX">
                 </div>
                 <div class="form-group">
-                    <label>Choose Access Key</label>
+                    <label>Choose Password</label>
                     <div style="position: relative;">
                         <input type="password" id="reg-password" placeholder="••••••••">
                         <span class="password-toggle" onclick="App.togglePassword('reg-password')">
@@ -400,7 +446,7 @@ const App = {
                         </span>
                     </div>
                 </div>
-                <button id="register-btn" class="btn-primary">Verify & Create</button>
+                <button id="register-btn" class="btn-primary">Verify & Create Account</button>
                 <p style="text-align: center; margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
                     Already active? <a href="#" id="toggle-login" style="color: var(--accent); text-decoration: none;">Login</a>
                 </p>
@@ -440,7 +486,9 @@ const App = {
             const password = document.getElementById('reg-password').value;
             const otp = document.getElementById('reg-otp').value;
 
+            this.setLoading(true);
             const success = await Auth.register(username, email, password, otp);
+            this.setLoading(false);
             if (success) this.setState('login');
         });
 
