@@ -4,6 +4,8 @@ const App = {
     currentSection: null, // mcq, practice
     userProgress: {},
     isLoading: false,
+    isListening: false,
+    recognition: null,
 
     init() {
         // Load Razorpay Script
@@ -162,6 +164,7 @@ const App = {
     },
 
     async setState(state, params = {}, pushHistory = true) {
+        if (this.isListening) this.stopMic();
         this.currentState = state;
         this.setLoading(true);
         if (state === 'dashboard' || state === 'leaderboard' || state === 'selection' || state === 'quiz' || state === 'interviews') {
@@ -924,11 +927,18 @@ const App = {
                     ${data.question}
                 </div>
 
-                <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.8rem;">
                     <label>${isCode ? 'IMPLEMENTATION_EDITOR' : 'RESPONSE_TERMINAL'}</label>
+                    ${!isCode ? `
+                        <button class="mic-btn" id="mic-btn" onclick="App.toggleMic()" title="Toggle Voice Input">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        </button>
+                    ` : ''}
+                </div>
+                <div class="form-group">
                     ${isCode ?
                 `<textarea id="interview-answer" class="code-editor" placeholder="Write your code solution here..." style="height: 300px;"></textarea>` :
-                `<textarea id="interview-answer" class="code-editor" placeholder="Type your detailed answer here..." style="height: 200px; color: #fff;"></textarea>`
+                `<textarea id="interview-answer" class="code-editor" placeholder="Type or use mic to speak your answer..." style="height: 200px; color: #fff;"></textarea>`
             }
                 </div>
 
@@ -1256,6 +1266,75 @@ const App = {
         } catch (error) {
             console.error('Failed to load leaderboard:', error);
             container.innerHTML = `<div>SYSTEM ERROR: FAILED TO FETCH RANKINGS</div>`;
+        }
+    },
+
+    toggleMic() {
+        const micBtn = document.getElementById('mic-btn');
+        const textarea = document.getElementById('interview-answer');
+
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            return this.notify('Speech recognition is not supported in your browser.', 'error');
+        }
+
+        if (!this.recognition) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            this.recognition.continuous = true;
+            this.recognition.interimResults = true;
+            this.recognition.lang = 'en-US';
+
+            this.recognition.onresult = (event) => {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                }
+                if (finalTranscript) {
+                    textarea.value += (textarea.value ? ' ' : '') + finalTranscript;
+                }
+            };
+
+            this.recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                this.stopMic();
+            };
+
+            this.recognition.onend = () => {
+                this.isListening = false;
+                if (micBtn) micBtn.classList.remove('mic-listening');
+            };
+        }
+
+        if (this.isListening) {
+            this.stopMic();
+        } else {
+            this.startMic();
+        }
+    },
+
+    startMic() {
+        if (this.recognition) {
+            try {
+                this.recognition.start();
+                this.isListening = true;
+                const micBtn = document.getElementById('mic-btn');
+                if (micBtn) micBtn.classList.add('mic-listening');
+                this.notify('Voice Input Active', 'success');
+            } catch (err) {
+                console.error('Recognition start error:', err);
+            }
+        }
+    },
+
+    stopMic() {
+        if (this.recognition) {
+            this.recognition.stop();
+            this.isListening = false;
+            const micBtn = document.getElementById('mic-btn');
+            if (micBtn) micBtn.classList.remove('mic-listening');
+            this.notify('Voice Input Deactivated', 'info');
         }
     }
 };
