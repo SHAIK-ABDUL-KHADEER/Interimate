@@ -19,12 +19,14 @@ const Quiz = {
         // --- AUTO-RESUME LOGIC ---
         const currentQuestions = this.questions[this.section] || [];
         let firstUnsolved = 0;
-        for (let i = 0; i < currentQuestions.length; i++) {
-            if (!this.isQuestionCompleted(currentQuestions[i].id)) {
-                firstUnsolved = i;
-                break;
+        if (currentQuestions.length > 0) {
+            for (let i = 0; i < currentQuestions.length; i++) {
+                if (!this.isQuestionCompleted(currentQuestions[i].id)) {
+                    firstUnsolved = i;
+                    break;
+                }
+                firstUnsolved = i; // If all solved, point to the last one
             }
-            firstUnsolved = i; // If all solved, point to the last one
         }
         this.currentIndex = firstUnsolved;
 

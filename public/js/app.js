@@ -146,7 +146,7 @@ const App = {
     async setState(state, params = {}, pushHistory = true) {
         this.currentState = state;
         this.setLoading(true);
-        if (state === 'dashboard' || state === 'leaderboard' || state === 'selection') {
+        if (state === 'dashboard' || state === 'leaderboard' || state === 'selection' || state === 'quiz') {
             await this.loadProgress();
         }
         this.setLoading(false);

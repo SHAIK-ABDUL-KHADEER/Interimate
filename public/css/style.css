@@ -1206,7 +1206,7 @@ footer {
 
 .dropdown-menu {
     position: absolute;
-    bottom: calc(100% + 10px);
+    top: calc(100% + 10px);
     left: 0;
     width: 280px;
     background: #050505;
