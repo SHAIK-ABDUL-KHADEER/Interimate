@@ -6,6 +6,7 @@ const topicContext = {
     'sql': 'Relational SQL. FOR QUESTIONS 1-20: Strictly BASIC DDL (CREATE, ALTER) and DML (INSERT, UPDATE, DELETE, simple SELECT). NO JOINS OR SUBQUERIES until Question 21+.'
 };
 
+let genAI = null;
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 async function generateQuestion(topic, type, existingCount, existingData = []) {
