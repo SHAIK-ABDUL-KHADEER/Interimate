@@ -1423,3 +1423,32 @@ footer {
 .dropdown-menu::-webkit-scrollbar-thumb:hover {
     background: var(--accent);
 }
+/* Global Credits Badge */
+.credits-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(212, 255, 0, 0.1);
+    border: 1px solid var(--accent);
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    margin-left: 2rem;
+    box-shadow: 0 0 10px rgba(212, 255, 0, 0.1);
+}
+
+.credits-badge.hidden {
+    display: none;
+}
+
+.credits-label {
+    color: var(--text-secondary);
+    letter-spacing: 0.1em;
+}
+
+.credits-count {
+    color: var(--accent);
+    font-weight: 950;
+    text-shadow: 0 0 10px var(--accent-glow);
+}

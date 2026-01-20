@@ -203,8 +203,22 @@ const App = {
                 headers: Auth.getAuthHeader()
             });
             this.userProgress = await response.json();
+            this.updateGlobalCredits();
         } catch (error) {
             console.error('Failed to load progress:', error);
+        }
+    },
+
+    updateGlobalCredits() {
+        const globalEl = document.getElementById('global-credits');
+        const countEl = document.getElementById('global-credits-count');
+        if (globalEl && countEl) {
+            if (Auth.isAuthenticated()) {
+                globalEl.classList.remove('hidden');
+                countEl.textContent = this.userProgress.interviewCredits || 0;
+            } else {
+                globalEl.classList.add('hidden');
+            }
         }
     },
 
@@ -228,6 +242,7 @@ const App = {
         }
 
         header.classList.remove('hidden');
+        this.updateGlobalCredits();
 
         switch (this.currentState) {
             case 'dashboard':
@@ -851,6 +866,13 @@ const App = {
             const data = await res.json();
             this.currentInterviewId = data.interviewId;
             this.currentQuestionCount = 1;
+
+            // Sync credits immediately
+            if (data.remainingCredits !== undefined) {
+                this.userProgress.interviewCredits = data.remainingCredits;
+                this.updateGlobalCredits();
+            }
+
             this.setLoading(false);
             this.renderInterviewSession(data.nextQuestion);
         } catch (error) {
@@ -1034,7 +1056,10 @@ const App = {
                             <div id="coupon-message" style="font-size: 0.5rem; margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.1em;"></div>
                         </div>
 
-                        <button class="btn-primary" style="margin-top: 2rem;" id="buy-btn" onclick="App.handlePayment()">UPGRADE TO PREMIUM</button>
+                        ${this.userProgress.plan === 'paid' ?
+                `<button class="btn-secondary" style="margin-top: 2rem; border-color: var(--accent); color: var(--accent); cursor: default !important;">PREMIUM ACTIVE</button>` :
+                `<button class="btn-primary" style="margin-top: 2rem;" id="buy-btn" onclick="App.handlePayment()">UPGRADE TO PREMIUM</button>`
+            }
                     </div>
                 </div>
             </div>
