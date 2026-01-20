@@ -465,10 +465,20 @@ app.post('/api/validate', authenticateToken, async (req, res) => {
 
 app.get('/api/progress', authenticateToken, async (req, res) => {
     try {
-        const progress = await Progress.findOne({ username: req.user.empId });
-        res.json(progress ? progress.categories : {});
+        const empId = req.user.empId;
+        const [user, progress] = await Promise.all([
+            User.findOne({ username: empId }),
+            Progress.findOne({ username: empId })
+        ]);
+
+        res.json({
+            ...(progress ? progress.categories : {}),
+            plan: user?.plan || 'free',
+            interviewCredits: user?.interviewCredits || 0
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching progress' });
+        console.error('Progress Fetch Error:', error);
+        res.status(500).json({ message: 'Error fetching progress data' });
     }
 });
 
