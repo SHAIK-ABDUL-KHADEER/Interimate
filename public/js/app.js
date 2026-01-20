@@ -842,6 +842,10 @@ const App = {
             this.currentQuestionCount = 1;
             this.setLoading(false);
             this.renderInterviewSession(data.nextQuestion);
+        } catch (error) {
+            console.error('Start Interview Error:', error);
+            this.setLoading(false);
+            this.notify('Failed to start interview system.', 'error');
         }
     },
 
