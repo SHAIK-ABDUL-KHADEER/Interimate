@@ -85,14 +85,14 @@ const App = {
 
         // Hover effect for interactive elements
         document.addEventListener('mouseover', (e) => {
-            if (e.target.closest('button, a, .card, .landing-card, input, textarea, [role="button"]')) {
+            if (e.target.closest('button, a, .card, .landing-card, .logo, input, textarea, [role="button"]')) {
                 dot.classList.add('cursor-hover');
                 outline.classList.add('cursor-hover');
             }
         });
 
         document.addEventListener('mouseout', (e) => {
-            if (e.target.closest('button, a, .card, .landing-card, input, textarea, [role="button"]')) {
+            if (e.target.closest('button, a, .card, .landing-card, .logo, input, textarea, [role="button"]')) {
                 dot.classList.remove('cursor-hover');
                 outline.classList.remove('cursor-hover');
             }
@@ -110,6 +110,16 @@ const App = {
     },
 
     attachGlobalListeners() {
+        // Logo redirection
+        const logo = document.querySelector('.logo');
+        if (logo) {
+            logo.style.cursor = 'pointer';
+            logo.addEventListener('click', () => {
+                if (Auth.isAuthenticated()) this.setState('dashboard');
+                else this.setState('landing');
+            });
+        }
+
         document.getElementById('nav-dashboard').addEventListener('click', () => this.setState('dashboard'));
         document.getElementById('nav-interviews').addEventListener('click', () => this.setState('interviews'));
         document.getElementById('nav-pricing').addEventListener('click', () => this.setState('pricing'));

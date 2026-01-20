@@ -301,13 +301,26 @@ app.post('/api/reset-password', async (req, res) => {
 // 6. Feedback
 app.post('/api/feedback', authenticateToken, async (req, res) => {
     const { feedback } = req.body;
-    const user = req.user; // From authenticateToken middleware
+    const user = req.user; // From authenticateToken middleware (contains empId)
 
     if (!feedback) return res.status(400).json({ message: 'Feedback content required' });
 
     try {
-        const emailText = `New Feedback from ${user.empId}:\n\n${feedback}`;
-        await sendEmail('support@interimate.com', `Interimate Feedback - ${user.empId}`, emailText);
+        // Fetch user's email from DB
+        const userData = await User.findOne({ username: user.empId });
+        if (!userData || !userData.email) {
+            throw new Error('User email not found for auto-reply.');
+        }
+
+        const supportEmailText = `New Feedback from ${user.empId} (${userData.email}):\n\n${feedback}`;
+        const userAutoReplyText = `Received your feedback.\n\nThanks for your feedback.\nWe will definitely work on it for sure.\n\nIf there are any issues please mail us at support@interimate.com`;
+
+        // Parallel execution for speed
+        await Promise.all([
+            sendEmail('support@interimate.com', `Interimate Feedback - ${user.empId}`, supportEmailText),
+            sendEmail(userData.email, 'We received your feedback - Interimate', userAutoReplyText)
+        ]);
+
         res.json({ message: 'Feedback sent successfully! Thank you for the contribution.' });
     } catch (error) {
         console.error('Feedback Error:', error);
