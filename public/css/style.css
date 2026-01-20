@@ -55,7 +55,7 @@ textarea,
     left: 0;
     transform: translate(-50%, -50%);
     border-radius: 50%;
-    z-index: 10000;
+    z-index: 999999;
     pointer-events: none;
     transition: width 0.3s, height 0.3s, background-color 0.3s;
 }
@@ -69,7 +69,7 @@ textarea,
     left: 0;
     transform: translate(-50%, -50%);
     border-radius: 50%;
-    z-index: 9999;
+    z-index: 999998;
     pointer-events: none;
     transition: width 0.3s, height 0.3s, opacity 0.3s, border-color 0.3s;
     opacity: 0.8;
@@ -1351,7 +1351,7 @@ footer {
     overflow-y: auto;
     display: none;
     flex-direction: column;
-    z-index: 10000;
+    z-index: 999999;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
     animation: fadeIn 0.2s ease;
