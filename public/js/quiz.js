@@ -327,6 +327,7 @@ const Quiz = {
             statusEl.innerHTML = '<span style="color: var(--accent); font-weight: 800; animation: pulse 1s infinite;">STATUS: GENERATING NEXT QUESTION... PLEASE WAIT</span>';
         }
 
+        App.setLoading(true);
         try {
             const response = await fetch(`/api/questions/${this.category}/next`, {
                 method: 'POST',
@@ -342,9 +343,11 @@ const Quiz = {
             const newQuestion = await response.json();
             this.questions[this.section].push(newQuestion);
             this.currentIndex = this.questions[this.section].length - 1;
+            App.setLoading(false);
             this.render();
         } catch (error) {
             console.error('Failed to fetch next question:', error);
+            App.setLoading(false);
             App.notify('Error generating next question. Please try again.', 'error');
             this.render();
         }

@@ -115,7 +115,32 @@ const App = {
         document.getElementById('nav-pricing').addEventListener('click', () => this.setState('pricing'));
         document.getElementById('nav-feedback').addEventListener('click', () => this.setState('feedback'));
         document.getElementById('nav-leaderboard').addEventListener('click', () => this.setState('leaderboard'));
-        document.getElementById('nav-logout').addEventListener('click', () => Auth.logout());
+        document.getElementById('nav-logout').addEventListener('click', () => this.showLogoutModal());
+    },
+
+    showLogoutModal() {
+        const modal = document.createElement('div');
+        modal.id = 'logout-modal';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3 style="color: var(--accent); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.1em;">Confirm Logout</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.9rem;">Are you sure you want to terminate the current session?</p>
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    <button class="btn-primary" id="confirm-logout" style="width: auto; padding: 0.8rem 2rem;">LOGOUT</button>
+                    <button class="btn-secondary" id="cancel-logout" style="width: auto; padding: 0.8rem 2rem;">CANCEL</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById('confirm-logout').onclick = () => Auth.logout();
+        document.getElementById('cancel-logout').onclick = () => modal.remove();
+
+        // Close on overlay click
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.remove();
+        };
     },
 
     async setState(state, params = {}, pushHistory = true) {

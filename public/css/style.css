@@ -1108,4 +1108,52 @@ footer {
 .cursor-outline.loading {
     animation: cursorPulse 1s ease-in-out infinite;
     mix-blend-mode: normal;
+}/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 20000;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background-color: #050505;
+    border: 1px solid var(--border);
+    padding: 3rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 50px rgba(0, 255, 102, 0.1);
+    position: relative;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
