@@ -1320,11 +1320,11 @@ footer {
     width: 280px;
     background: #050505;
     border: 1px solid var(--border);
-    max-height: 300px;
+    max-height: 250px;
     overflow-y: auto;
     display: none;
     flex-direction: column;
-    z-index: 1000;
+    z-index: 10000;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
     animation: fadeIn 0.2s ease;
