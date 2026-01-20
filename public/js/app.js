@@ -630,12 +630,48 @@ const App = {
         `;
     },
 
-    renderInterviews(container) {
+    async renderInterviews(container) {
+        this.setLoading(true);
+        let interviews = [];
+        try {
+            const res = await fetch('/api/interviews/list', {
+                headers: Auth.getAuthHeader()
+            });
+            interviews = await res.json();
+        } catch (error) {
+            console.error('Error fetching interviews:', error);
+        }
+        this.setLoading(false);
+
+        const activeInterviews = interviews.filter(i => i.status === 'active');
+        const completedInterviews = interviews.filter(i => i.status === 'completed');
+
         container.innerHTML = `
             <div class="dashboard-header" style="margin-bottom: 4rem;">
                 <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">Interview Engine</h1>
-                <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Select your evaluation protocol // Career Genesis v3.5</p>
+                <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Select your evaluation protocol or continue an active session.</p>
             </div>
+
+            ${activeInterviews.length > 0 ? `
+            <div class="active-sessions-section" style="margin-bottom: 4rem;">
+                <h2 style="font-size: 1.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 2rem;">Active Sessions <span style="opacity: 0.5;">[ PENDING_CALIBRATION ]</span></h2>
+                <div class="dashboard-grid">
+                    ${activeInterviews.map(i => `
+                        <div class="card interview-card" onclick="App.resumeInterview('${i._id}')">
+                            <div style="display: flex; justify-content: space-between;">
+                                <div class="card-icon" style="color: var(--accent);">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="m19 9-7 7-7-7"/></svg>
+                                </div>
+                                <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #fff; background: var(--accent); padding: 0.2rem 0.5rem; border-radius: 2px;">RESUME #QC-${i.history.length}/10</div>
+                            </div>
+                            <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem;">${i.type === 'topic' ? i.topics.join(' + ') : 'RESUME TRACK'}</h3>
+                            <p style="color: var(--text-secondary); font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">Started: ${new Date(i.createdAt).toLocaleDateString()}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            ` : ''}
+
             <div class="dashboard-grid">
                 <!-- Topic Based -->
                 <div class="card interview-card" onclick="App.renderTopicInterviewSetup()">
@@ -673,6 +709,36 @@ const App = {
                     <p style="color: #444; font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Evaluate your practical implementation by uploading your project repository.</p>
                 </div>
             </div>
+
+            ${completedInterviews.length > 0 ? `
+            <div class="history-section" style="margin-top: 6rem;">
+                <h2 style="font-size: 1.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary); border-bottom: 2px solid #111; padding-bottom: 1rem; margin-bottom: 2rem;">Past Evaluations History</h2>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.75rem;">
+                        <thead>
+                            <tr style="text-align: left; color: var(--accent); border-bottom: 1px solid #222;">
+                                <th style="padding: 1rem;">PROTOCOL</th>
+                                <th style="padding: 1rem;">DATE</th>
+                                <th style="padding: 1rem;">SIGMA_SCORE</th>
+                                <th style="padding: 1rem; text-align: right;">ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${completedInterviews.map(i => `
+                                <tr style="border-bottom: 1px solid #111;">
+                                    <td style="padding: 1.5rem 1rem; text-transform: uppercase; font-weight: 700;">${i.type === 'topic' ? i.topics.join(', ') : 'RESUME_BASED'}</td>
+                                    <td style="padding: 1.5rem 1rem; color: var(--text-secondary);">${new Date(i.createdAt).toLocaleDateString()}</td>
+                                    <td style="padding: 1.5rem 1rem;"><span style="color: var(--accent); font-weight: 900;">${i.report?.score || 'N/A'}/10</span></td>
+                                    <td style="padding: 1.5rem 1rem; text-align: right;">
+                                        <button class="btn-primary" style="width: auto; padding: 0.4rem 1rem; font-size: 0.6rem;" onclick="App.renderInterviewReport('${i._id}')">VIEW_REPORT</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            ` : ''}
         `;
     },
 
@@ -776,10 +842,26 @@ const App = {
             this.currentQuestionCount = 1;
             this.setLoading(false);
             this.renderInterviewSession(data.nextQuestion);
-        } catch (error) {
-            console.error('Start Interview Error:', error);
+        }
+    },
+
+    async resumeInterview(id) {
+        this.setLoading(true);
+        try {
+            const res = await fetch(`/api/interview/resume/${id}`, {
+                headers: Auth.getAuthHeader()
+            });
+            if (!res.ok) throw new Error('Failed to resume');
+            const data = await res.json();
+
+            this.currentInterviewId = data.interviewId;
+            this.currentQuestionCount = data.questionCount;
             this.setLoading(false);
-            this.notify('Failed to start interview system.', 'error');
+            this.renderInterviewSession(data.nextQuestion);
+        } catch (error) {
+            console.error('Resume Error:', error);
+            this.setLoading(false);
+            this.notify('Failed to resume session.', 'error');
         }
     },
 

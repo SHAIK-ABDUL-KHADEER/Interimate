@@ -625,6 +625,39 @@ app.get('/api/interview/report/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// Fetch all interviews for a user
+app.get('/api/interviews/list', authenticateToken, async (req, res) => {
+    try {
+        const interviews = await Interview.find({ username: req.user.empId }).sort({ createdAt: -1 });
+        res.json(interviews);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching interviews' });
+    }
+});
+
+// Resume an active interview
+app.get('/api/interview/resume/:id', authenticateToken, async (req, res) => {
+    try {
+        const interview = await Interview.findById(req.params.id);
+        if (!interview) return res.status(404).json({ message: 'Interview not found' });
+        if (interview.status === 'completed') return res.status(400).json({ message: 'Interview already completed' });
+
+        // Return the last state
+        const lastQuestion = interview.history[interview.history.length - 1];
+        res.json({
+            interviewId: interview._id,
+            questionCount: interview.history.length,
+            nextQuestion: {
+                question: lastQuestion.question,
+                feedback: lastQuestion.feedback,
+                isCodeRequired: lastQuestion.question.includes('code') || lastQuestion.question.includes('Snippet') // Heuristic as it might not be saved
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error resuming interview' });
+    }
+});
+
 // Ping endpoint for health checks
 app.get('/api/ping', (req, res) => {
     res.status(200).send('ACK');
