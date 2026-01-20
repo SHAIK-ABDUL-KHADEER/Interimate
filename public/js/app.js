@@ -1088,6 +1088,12 @@ const App = {
     async handlePayment() {
         this.setLoading(true);
         try {
+            // Fetch public key from server
+            const keyRes = await fetch('/api/config/razorpay-key');
+            const { keyId } = await keyRes.json();
+
+            if (!keyId) throw new Error('Razorpay Key not configured on server');
+
             const res = await fetch('/api/payment/order', {
                 method: 'POST',
                 headers: { ...Auth.getAuthHeader(), 'Content-Type': 'application/json' },
@@ -1096,7 +1102,7 @@ const App = {
             const order = await res.json();
 
             const options = {
-                key: 'rzp_test_placeholder', // Should Ideally come from server or process.env, but for demo:
+                key: keyId,
                 amount: order.amount,
                 currency: "INR",
                 name: "Interimate Premium",
@@ -1131,7 +1137,7 @@ const App = {
             rzp.open();
         } catch (error) {
             console.error('Payment Error:', error);
-            this.notify('Failed to initialize payment', 'error');
+            this.notify(error.message || 'Failed to initialize payment', 'error');
         } finally {
             this.setLoading(false);
         }

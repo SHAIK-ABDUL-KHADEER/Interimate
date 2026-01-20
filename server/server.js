@@ -698,6 +698,10 @@ app.get('/api/interview/resume/:id', authenticateToken, async (req, res) => {
 });
 
 // 8. Payment & Coupons
+app.get('/api/config/razorpay-key', (req, res) => {
+    res.json({ keyId: process.env.RAZORPAY_KEY_ID || '' });
+});
+
 app.post('/api/coupon/validate', authenticateToken, (req, res) => {
     const { code } = req.body;
     if (code?.toLowerCase() === 'poornima') {
