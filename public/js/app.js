@@ -77,6 +77,42 @@ const App = {
         };
     },
 
+    showBadgeUnlockNotification(newBadges) {
+        if (!newBadges || newBadges.length === 0) return;
+
+        const container = document.getElementById('notification-container');
+        if (!container) return;
+
+        newBadges.forEach(badge => {
+            const notification = document.createElement('div');
+            notification.className = `sigma-notify success pulse-glow`;
+            notification.style.borderLeft = `4px solid ${badge.color || 'var(--accent)'}`;
+
+            notification.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div style="font-weight: 900; letter-spacing: 0.1em; color: #fff;">[ MISSION_ACCOMPLISHED ]</div>
+                    <div style="font-size: 0.75rem; color: var(--accent);">${badge.title} UNLOCKED</div>
+                    <button class="btn-primary" style="font-size: 0.6rem; padding: 0.4rem 1rem; width: auto; margin-top: 0.5rem;" onclick="App.setState('badges')">VIEW IN MISSIONS</button>
+                </div>
+                <div class="notify-close" style="cursor:pointer; opacity:0.5; align-self: flex-start;">&times;</div>
+            `;
+
+            container.appendChild(notification);
+
+            // Auto remove after longer time (7s)
+            const timer = setTimeout(() => {
+                notification.classList.add('fade-out');
+                setTimeout(() => notification.remove(), 400);
+            }, 7000);
+
+            notification.querySelector('.notify-close').onclick = () => {
+                clearTimeout(timer);
+                notification.classList.add('fade-out');
+                setTimeout(() => notification.remove(), 400);
+            };
+        });
+    },
+
     initCursor() {
         const dot = document.querySelector('.cursor-dot');
         const outline = document.querySelector('.cursor-outline');
@@ -259,13 +295,21 @@ const App = {
     updateGlobalCredits() {
         const globalEl = document.getElementById('global-credits');
         const countEl = document.getElementById('global-credits-count');
-        if (globalEl && countEl) {
-            if (Auth.isAuthenticated()) {
+        const badgeEl = document.getElementById('global-badges');
+        const badgeCountEl = document.getElementById('global-badges-count');
+
+        if (Auth.isAuthenticated()) {
+            if (globalEl && countEl) {
                 globalEl.classList.remove('hidden');
                 countEl.textContent = this.userProgress.interviewCredits || 0;
-            } else {
-                globalEl.classList.add('hidden');
             }
+            if (badgeEl && badgeCountEl) {
+                badgeEl.classList.remove('hidden');
+                badgeCountEl.textContent = (this.userProgress.badges || []).length;
+            }
+        } else {
+            if (globalEl) globalEl.classList.add('hidden');
+            if (badgeEl) badgeEl.classList.add('hidden');
         }
     },
 
@@ -1611,46 +1655,69 @@ const App = {
         `;
     },
 
+    BADGE_METADATA: {
+        'GENESIS_CREATOR': { title: 'Genesis Pioneer', description: 'Be the first to synthesize an AI question', stars: 1, color: '#d4ff00' },
+        'JAVA_EXPERT': { title: 'Java Grandmaster', description: 'Complete 100% of Java Module', stars: 4, color: '#ff3366' },
+        'SELENIUM_EXPERT': { title: 'Selenium Automator', description: 'Complete 100% of Selenium Module', stars: 4, color: '#00ccff' },
+        'SQL_EXPERT': { title: 'SQL Architect', description: 'Complete 100% of SQL Module', stars: 4, color: '#9933ff' },
+        'QUIZ_50': { title: 'Quiz Initiate', description: 'Solve 50 Theory Questions', stars: 1, color: '#00ffaa' },
+        'QUIZ_100': { title: 'Quiz Veteran', description: 'Solve 100 Theory Questions', stars: 2, color: '#00ffaa' },
+        'QUIZ_300': { title: 'Quiz Elite', description: 'Solve 300 Theory Questions', stars: 3, color: '#00ffaa' },
+        'CODE_50': { title: 'Code Initiate', description: 'Solve 50 Code Challenges', stars: 1, color: '#ffb300' },
+        'CODE_100': { title: 'Code Veteran', description: 'Solve 100 Code Challenges', stars: 2, color: '#ffb300' },
+        'CODE_300': { title: 'Code Elite', description: 'Solve 150 Code Challenges', stars: 3, color: '#ffb300' }
+    },
+
     async renderBadges(container) {
         this.setLoading(true);
-        let badges = [];
+        let earnedBadges = [];
         try {
             const res = await fetch('/api/user/badges', { headers: Auth.getAuthHeader() });
-            badges = await res.json();
+            earnedBadges = await res.json();
         } catch (error) {
             console.error('Error fetching badges:', error);
         }
         this.setLoading(false);
 
+        const earnedIds = earnedBadges.map(b => b.id);
+
         container.innerHTML = `
             <div class="dashboard-header" style="margin-bottom: 4rem;">
-                <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">Aura Accolades</h1>
-                <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Social verification protocol // Displaying earned badges</p>
+                <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">Mission Control</h1>
+                <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Protocol Achievements // ${earnedBadges.length} / ${Object.keys(this.BADGE_METADATA).length} SECURED</p>
             </div>
             
             <div class="dashboard-grid">
-                ${badges.length === 0 ? `
-                    <div style="grid-column: 1/-1; text-align: center; padding: 4rem; border: 1px dashed #222; border-radius: 8px;">
-                        <p style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase;">NO PROTOCOL BADGES DETECTED</p>
-                        <p style="color: #444; font-size: 0.7rem; margin-top: 1rem;">Complete modules or solve challenges to unlock elite badges.</p>
-                        <button class="btn-primary" style="margin-top: 2rem; width: auto; padding: 0.8rem 2rem;" onclick="App.setState('dashboard')">START GRINDING</button>
-                    </div>
-                ` : badges.map(badge => `
-                    <div class="card badge-card" onclick='App.showBadgeHighlight(${JSON.stringify(badge).replace(/'/g, "&apos;")})'>
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <div class="badge-stars" style="color: ${badge.color || 'var(--accent)'};">
-                                ${Array(badge.stars).fill('<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>').join('')}
+                ${Object.entries(this.BADGE_METADATA).map(([id, meta]) => {
+            const earned = earnedBadges.find(b => b.id === id);
+            const isEarned = !!earned;
+
+            return `
+                        <div class="card badge-card ${!isEarned ? 'locked' : ''}" 
+                             ${isEarned ? `onclick='App.showBadgeHighlight(${JSON.stringify(earned).replace(/'/g, "&apos;")})'` : ''}>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div class="badge-stars" style="color: ${isEarned ? meta.color : '#222'};">
+                                    ${Array(meta.stars).fill('<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>').join('')}
+                                </div>
+                                <div style="font-family: var(--font-mono); font-size: 0.5rem; color: var(--accent); opacity: ${isEarned ? 0.5 : 0.15};">MODULE: ${id}</div>
                             </div>
-                            <div style="font-family: var(--font-mono); font-size: 0.5rem; color: var(--accent); opacity: 0.5;">ID: ${badge.id}</div>
+                            <h3 style="font-size: 1.5rem; font-weight: 900; text-transform: uppercase; margin-top: 2rem; color: ${isEarned ? '#fff' : '#333'}; letter-spacing: -0.02em;">${meta.title}</h3>
+                            <p style="color: ${isEarned ? 'var(--text-secondary)' : '#222'}; font-size: 0.75rem; margin-top: 0.5rem; font-family: var(--font-mono); line-height: 1.4;">${meta.description}</p>
+                            
+                            <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: flex-end;">
+                                ${isEarned ? `
+                                    <span style="font-size: 0.6rem; color: var(--accent); opacity: 0.7; font-family: var(--font-mono); text-transform: uppercase;">SECURED: ${new Date(earned.earnedAt).toLocaleDateString()}</span>
+                                    <button class="btn-secondary" style="font-size: 0.6rem; padding: 0.3rem 0.8rem; height: auto;">VIEW AURA</button>
+                                ` : `
+                                    <span style="font-size: 0.6rem; color: #333; font-family: var(--font-mono); text-transform: uppercase;">PROTOCOL_LOCKED</span>
+                                    <div style="color: #222;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                    </div>
+                                `}
+                            </div>
                         </div>
-                        <h3 style="font-size: 1.5rem; font-weight: 900; text-transform: uppercase; margin-top: 2rem; color: #fff; letter-spacing: -0.02em;">${badge.title}</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.5rem; font-family: var(--font-mono); line-height: 1.4;">${badge.description}</p>
-                        <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: flex-end;">
-                            <span style="font-size: 0.6rem; color: var(--accent); opacity: 0.7; font-family: var(--font-mono); text-transform: uppercase;">Earned: ${new Date(badge.earnedAt).toLocaleDateString()}</span>
-                            <button class="btn-secondary" style="font-size: 0.6rem; padding: 0.3rem 0.8rem; height: auto;">VIEW FULL</button>
-                        </div>
-                    </div>
-                `).join('')}
+                    `;
+        }).join('')}
             </div>
         `;
     },

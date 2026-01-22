@@ -300,7 +300,7 @@ const Quiz = {
 
     async saveProgress(section, questionId, status, response, feedback = null) {
         try {
-            await fetch('/api/progress', {
+            const response_raw = await fetch('/api/progress', {
                 method: 'POST',
                 headers: { ...Auth.getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -312,6 +312,9 @@ const Quiz = {
                     feedback
                 })
             });
+            const res = await response_raw.json();
+            if (res.newBadges) App.showBadgeUnlockNotification(res.newBadges);
+
             if (!App.userProgress[this.category]) App.userProgress[this.category] = { mcq: {}, practice: {} };
             App.userProgress[this.category][section][questionId] = { status, response, feedback };
         } catch (error) {
@@ -368,7 +371,10 @@ const Quiz = {
                 throw new Error(err.message || 'Failed to generate');
             }
 
-            const newQuestion = await response.json();
+            const data = await response.json();
+            if (data.newBadges) App.showBadgeUnlockNotification(data.newBadges);
+
+            const newQuestion = data;
             this.questions[this.section].push(newQuestion);
             this.currentIndex = this.questions[this.section].length - 1;
             App.setLoading(false);

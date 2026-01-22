@@ -564,7 +564,8 @@ app.get('/api/progress', authenticateToken, async (req, res) => {
         res.json({
             ...(progress ? progress.categories : {}),
             plan: user?.plan || 'free',
-            interviewCredits: user?.interviewCredits || 0
+            interviewCredits: user?.interviewCredits || 0,
+            badges: user?.badges || []
         });
     } catch (error) {
         console.error('Progress Fetch Error:', error);

@@ -1775,3 +1775,36 @@ footer {
     border-top: 1px solid #111;
     padding-top: 1rem;
 }
+
+/* Locked Badge Styling */
+.badge-card.locked {
+    filter: grayscale(1) opacity(0.5);
+    cursor: not-allowed;
+    pointer-events: auto !important;
+}
+
+.badge-card.locked:hover {
+    filter: grayscale(0.8) opacity(0.7);
+    transform: none;
+    box-shadow: none;
+}
+
+.badge-card.locked:hover::after {
+    content: ' MISSION_LOCKED ';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--danger);
+    font-family: var(--font-mono);
+    font-weight: 950;
+    letter-spacing: 0.2em;
+    font-size: 0.8rem;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+}
