@@ -128,14 +128,20 @@ const BADGE_DEFS = {
     'QUIZ_300': { title: 'Quiz Elite', description: 'Solve 300 Theory Questions', stars: 3, color: '#00ffaa' },
     'CODE_50': { title: 'Code Initiate', description: 'Solve 50 Code Challenges', stars: 1, color: '#ffb300' },
     'CODE_100': { title: 'Code Veteran', description: 'Solve 100 Code Challenges', stars: 2, color: '#ffb300' },
-    'CODE_300': { title: 'Code Elite', description: 'Solve 150 Code Challenges', stars: 3, color: '#ffb300' }
+    'CODE_300': { title: 'Code Elite', description: 'Solve 150 Code Challenges', stars: 3, color: '#ffb300' },
+    'INT_1': { title: 'Evaluation Initiate', description: 'Complete 1 AI Interview Session', stars: 1, color: '#ffffff' },
+    'INT_5': { title: 'Combat Veteran', description: 'Complete 5 AI Interview Sessions', stars: 2, color: '#ff6600' },
+    'INT_20': { title: 'Tactical Master', description: 'Complete 20 AI Interview Sessions', stars: 4, color: '#ffcc00' },
+    'SCORE_90': { title: 'High Performer', description: 'Achieve a score of 90+ in any evaluation', stars: 3, color: '#00ff00' },
+    'SCORE_95': { title: 'Elite Candidate', description: 'Achieve a score of 95+ in any evaluation', stars: 5, color: '#00ffee' }
 };
 
 async function checkAndGrantBadges(username, isGenesis = false) {
     try {
-        const [user, progress] = await Promise.all([
+        const [user, progress, interviews] = await Promise.all([
             User.findOne({ username }),
-            Progress.findOne({ username })
+            Progress.findOne({ username }),
+            Interview.find({ username, status: 'completed' })
         ]);
 
         if (!user || !progress) return [];
@@ -179,6 +185,19 @@ async function checkAndGrantBadges(username, isGenesis = false) {
             const bid = `CODE_${m}`;
             if (totalCode >= m && !earnedIds.includes(bid)) newBadgesTriggered.push(bid);
         });
+
+        // 3. Interview Milestones
+        const intCount = interviews.length;
+        const intMilestones = [1, 5, 20];
+        intMilestones.forEach(m => {
+            const bid = `INT_${m}`;
+            if (intCount >= m && !earnedIds.includes(bid)) newBadgesTriggered.push(bid);
+        });
+
+        // 4. High Score Checks
+        const maxScore = interviews.length > 0 ? Math.max(...interviews.map(i => i.report ? i.report.score : 0)) : 0;
+        if (maxScore >= 95 && !earnedIds.includes('SCORE_95')) newBadgesTriggered.push('SCORE_95');
+        else if (maxScore >= 90 && !earnedIds.includes('SCORE_90')) newBadgesTriggered.push('SCORE_90');
 
         // 3. Save new badges if any
         if (newBadgesTriggered.length > 0) {
@@ -755,7 +774,15 @@ app.post('/api/interview/next', authenticateToken, async (req, res) => {
             const report = await generateFinalReport(interview);
             interview.report = report;
             await interview.save();
-            return res.json({ status: 'completed', report });
+
+            // Trigger Badge Engine
+            const newBadges = await checkAndGrantBadges(interview.username);
+
+            return res.json({
+                status: 'completed',
+                report,
+                newBadges: newBadges.length > 0 ? newBadges : null
+            });
         }
 
         const nextQuestion = await getNextInterviewQuestion(interview);

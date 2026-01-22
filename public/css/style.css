@@ -1423,6 +1423,7 @@ footer {
 .dropdown-menu::-webkit-scrollbar-thumb:hover {
     background: var(--accent);
 }
+
 /* Global Credits Badge */
 .credits-badge {
     display: flex;
@@ -1483,9 +1484,20 @@ footer {
 }
 
 @keyframes micPulse {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(212, 255, 0, 0.4); }
-    70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(212, 255, 0, 0); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(212, 255, 0, 0); }
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(212, 255, 0, 0.4);
+    }
+
+    70% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 15px rgba(212, 255, 0, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(212, 255, 0, 0);
+    }
 }
 
 /* Modal Styles */
@@ -1513,7 +1525,7 @@ footer {
     max-width: 450px;
     width: 90%;
     text-align: center;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
     position: relative;
     transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1);
     cursor: none !important;
@@ -1530,7 +1542,8 @@ footer {
         cursor: auto !important;
     }
 
-    .cursor-dot, .cursor-outline {
+    .cursor-dot,
+    .cursor-outline {
         display: none !important;
     }
 
@@ -1594,16 +1607,19 @@ footer {
         width: 100%;
     }
 
-    .btn-primary, .btn-secondary {
+    .btn-primary,
+    .btn-secondary {
         width: 100% !important;
     }
 
-    .dashboard-grid, .pricing-grid {
+    .dashboard-grid,
+    .pricing-grid {
         grid-template-columns: 1fr;
         gap: 1.5rem;
     }
 
-    .card, .pricing-card {
+    .card,
+    .pricing-card {
         padding: 1.5rem;
     }
 
@@ -1619,7 +1635,8 @@ footer {
         display: none !important;
     }
 
-    .mcq-card, .practice-card {
+    .mcq-card,
+    .practice-card {
         padding: 1rem;
     }
 
@@ -1627,7 +1644,8 @@ footer {
         font-size: 1.1rem;
     }
 
-    .leaderboard-table th, .leaderboard-table td {
+    .leaderboard-table th,
+    .leaderboard-table td {
         padding: 0.75rem 0.5rem;
         font-size: 0.75rem;
     }
@@ -1660,15 +1678,17 @@ footer {
 /* Elite Badge System */
 .badge-card {
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
-    background: rgba(20, 20, 20, 0.4) !important;
+    background: rgba(5, 5, 5, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
     border-radius: 4px !important;
     cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .badge-card:hover {
     transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+    border-color: var(--accent) !important;
 }
 
 .badge-highlight-container {
@@ -1679,8 +1699,15 @@ footer {
 }
 
 @keyframes badgePop {
-    from { transform: scale(0.8) translateY(20px); opacity: 0; }
-    to { transform: scale(1) translateY(0); opacity: 1; }
+    from {
+        transform: scale(0.8) translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
 }
 
 .badge-glow {
@@ -1696,18 +1723,26 @@ footer {
 }
 
 @keyframes glowPulse {
-    from { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
-    to { opacity: 0.6; transform: translate(-50%, -50%) scale(1.2); }
+    from {
+        opacity: 0.3;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    to {
+        opacity: 0.6;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
 }
 
 .badge-modal-content {
-    background: rgba(10, 10, 10, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(5, 5, 5, 0.98);
+    border: 1px solid var(--accent);
     padding: 4rem;
     text-align: center;
     position: relative;
     overflow: hidden;
     backdrop-filter: blur(20px);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
 }
 
 .badge-interimate {
@@ -1721,21 +1756,22 @@ footer {
 
 .badge-star-highlight {
     margin-bottom: 2rem;
-    filter: drop-shadow(0 0 10px currentColor);
+    filter: drop-shadow(0 0 15px currentColor);
 }
 
 .badge-title-large {
-    font-size: 3rem;
+    font-size: 3.5rem;
     font-weight: 950;
     text-transform: uppercase;
     letter-spacing: -0.05em;
     margin-bottom: 1rem;
     color: #fff;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
 }
 
 .badge-description-large {
     color: var(--text-secondary);
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-family: var(--font-mono);
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -1743,7 +1779,8 @@ footer {
 }
 
 .badge-user-info {
-    border: 1px solid #222;
+    border: 1px solid #333;
+    background: rgba(255, 255, 255, 0.02);
     padding: 1.5rem;
     display: inline-block;
     min-width: 250px;
@@ -1751,15 +1788,15 @@ footer {
 }
 
 .verified-label {
-    font-size: 0.5rem;
-    color: #444;
+    font-size: 0.6rem;
+    color: #666;
     letter-spacing: 0.2em;
     margin-bottom: 0.5rem;
 }
 
 .badge-username {
-    font-size: 1.5rem;
-    font-weight: 800;
+    font-size: 1.8rem;
+    font-weight: 900;
     color: #fff;
     text-transform: uppercase;
 }
@@ -1768,43 +1805,46 @@ footer {
     display: flex;
     justify-content: space-between;
     font-family: var(--font-mono);
-    font-size: 0.6rem;
-    color: #333;
+    font-size: 0.7rem;
+    color: #555;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    border-top: 1px solid #111;
-    padding-top: 1rem;
+    border-top: 1px solid #222;
+    padding-top: 1.5rem;
 }
 
 /* Locked Badge Styling */
 .badge-card.locked {
-    filter: grayscale(1) opacity(0.5);
+    filter: grayscale(1) contrast(1.2);
+    background: rgba(0, 0, 0, 0.95) !important;
+    opacity: 0.4;
     cursor: not-allowed;
     pointer-events: auto !important;
 }
 
 .badge-card.locked:hover {
-    filter: grayscale(0.8) opacity(0.7);
-    transform: none;
-    box-shadow: none;
+    filter: grayscale(0.7) contrast(1.5);
+    opacity: 0.6;
+    transform: scale(1.01);
 }
 
 .badge-card.locked:hover::after {
-    content: ' MISSION_LOCKED ';
+    content: ' [!] MISSION_LOCKED ';
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.9);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--danger);
+    color: #ff3333;
     font-family: var(--font-mono);
     font-weight: 950;
-    letter-spacing: 0.2em;
-    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    font-size: 0.9rem;
     z-index: 10;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    border: 1px solid #ff3333;
 }
