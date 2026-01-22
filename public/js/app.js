@@ -1350,6 +1350,71 @@ const App = {
             if (micBtn) micBtn.classList.remove('mic-listening');
             this.notify('Voice Input Deactivated', 'info');
         }
+    },
+
+    async renderInterviewReport(id) {
+        this.setLoading(true);
+        try {
+            const res = await fetch(`/api/interview/report/${id}`, {
+                headers: Auth.getAuthHeader()
+            });
+            if (!res.ok) throw new Error('Failed to fetch report');
+            const interview = await res.json();
+            const report = interview.report;
+
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="report-container" style="max-width: 900px; margin: 0 auto; padding-bottom: 5rem;">
+                    <div class="dashboard-header" style="margin-bottom: 3rem;">
+                        <h1 style="font-size: 3rem; font-weight: 950; color: var(--accent); text-transform: uppercase; letter-spacing: -0.05em;">Evaluation Report</h1>
+                        <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem; margin-top: 1rem;">Protocol: ${interview.type.toUpperCase()} // SIGMA_SCORE: <span style="color: #fff; font-weight: 800;">${report.score}/10</span></p>
+                    </div>
+
+                    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-bottom: 4rem;">
+                        <div class="mcq-card" style="border-left: 4px solid var(--success); flex: 1;">
+                            <h4 style="color: var(--success); font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 1.5rem; text-transform: uppercase;">Key Strengths</h4>
+                            <p style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">${report.strengths}</p>
+                        </div>
+                        <div class="mcq-card" style="border-left: 4px solid var(--accent); flex: 1;">
+                            <h4 style="color: var(--accent); font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 1.5rem; text-transform: uppercase;">Primary Improvements</h4>
+                            <p style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">${report.improvements}</p>
+                        </div>
+                    </div>
+
+                    <div class="history-section" style="margin-top: 4rem;">
+                        <h2 style="font-size: 1.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 2rem;">Full Session Transcript</h2>
+                        <div style="display: flex; flex-direction: column; gap: 2rem;">
+                            ${interview.history.map((h, i) => `
+                                <div class="feedback-box revealed" style="margin-bottom: 0;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                                        <span style="font-size: 0.6rem; color: var(--accent); font-family: var(--font-mono); text-transform: uppercase;">Question ${i + 1}</span>
+                                        ${h.feedback ? `<span style="font-size: 0.6rem; color: var(--text-secondary); font-family: var(--font-mono);">SIGMA_CALIBRATED</span>` : ''}
+                                    </div>
+                                    <p style="font-weight: 700; color: #fff; margin-bottom: 1.5rem;">${h.question}</p>
+                                    <div style="color: var(--text-secondary); padding: 1rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 2px;">
+                                        <div style="font-size: 0.6rem; font-family: var(--font-mono); margin-bottom: 0.5rem; color: #555;">USER_RESPONSE:</div>
+                                        <p style="font-size: 0.85rem; font-family: var(--font-mono); color: var(--accent);">${h.answer || '[ SKIPPED / NO_RESPONSE ]'}</p>
+                                    </div>
+                                    ${h.feedback ? `
+                                        <div style="margin-top: 1.5rem; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
+                                            <span style="font-size: 0.6rem; color: #555; text-transform: uppercase; font-family: var(--font-mono); display: block; margin-bottom: 0.5rem;">INTERVIEWER_NOTE:</span>
+                                            ${h.feedback}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" style="margin-top: 4rem; width: auto; padding: 1rem 3rem;" onclick="App.setState('interviews')">BACK TO ENGINE</button>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Report Error:', error);
+            this.notify('Failed to load evaluation report', 'error');
+        } finally {
+            this.setLoading(false);
+        }
     }
 };
 

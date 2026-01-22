@@ -665,10 +665,10 @@ app.post('/api/interview/next', authenticateToken, async (req, res) => {
 app.get('/api/interview/report/:id', authenticateToken, async (req, res) => {
     try {
         const interview = await Interview.findById(req.params.id);
-        if (!interview || interview.report === null) {
+        if (!interview || !interview.report) {
             return res.status(404).json({ message: 'Report not ready or missing' });
         }
-        res.json(interview.report);
+        res.json(interview);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching report' });
     }
