@@ -180,6 +180,7 @@ const App = {
         if (navLinks) navLinks.classList.remove('active');
 
         this.currentState = state;
+        this.currentParams = params;
         this.setLoading(true);
         if (state === 'dashboard' || state === 'leaderboard' || state === 'selection' || state === 'quiz' || state === 'interviews') {
             await this.loadProgress();
@@ -1178,7 +1179,17 @@ const App = {
                 },
                 prefill: {
                     name: Auth.empId,
-                    email: "support@interimate.com"
+                    email: "support@interimate.com",
+                    contact: ""
+                },
+                modal: {
+                    readonly: {
+                        contact: true,
+                        email: true
+                    },
+                    ondismiss: () => {
+                        this.setLoading(false);
+                    }
                 },
                 theme: {
                     color: "#d4ff00"

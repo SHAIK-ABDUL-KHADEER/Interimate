@@ -758,6 +758,16 @@ app.post('/api/payment/verify', authenticateToken, async (req, res) => {
             user.plan = 'paid';
             user.interviewCredits += 3; // Add 3 credits
             await user.save();
+
+            // Send Acknowledgment Email
+            try {
+                const emailSubject = "MISSION_ACQUISITION: Premium Tier Activated";
+                const emailText = `Hello ${user.username || 'Operative'},\n\nYour transaction has been verified. The Sigma Engine has been upgraded to the Professional Tier.\n\nACQUISITIONS:\n- 3 Full Interview Credits Added\n- Resume-Based Evaluation Unlocked\n- Advanced Daily Protocol Limits Applied\n\nLogin to Interimate to begin your elevation.\n\nRegards,\nAgent Sigma\nInterimate Prep Solutions`;
+                await sendEmail(user.email, emailSubject, emailText);
+            } catch (mailErr) {
+                console.error('Failed to send payment ack email:', mailErr);
+            }
+
             res.json({ status: "success", message: "Payment verified, 3 credits added!" });
         } catch (err) {
             res.status(500).json({ message: "Payment verified but failed to update credits" });
