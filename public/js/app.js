@@ -16,11 +16,29 @@ const App = {
             document.head.appendChild(script);
         }
 
-        this.render();
-        this.attachGlobalListeners();
         this.initCursor();
         window.addEventListener('popstate', (e) => this.handlePopState(e));
-        history.replaceState({ state: this.currentState, params: {} }, '');
+        window.addEventListener('hashchange', () => this.handleHashChange());
+
+        // Initial route check
+        if (window.location.hash) {
+            this.handleHashChange();
+        } else {
+            this.render();
+            history.replaceState({ state: this.currentState, params: {} }, '');
+        }
+
+        this.attachGlobalListeners();
+    },
+
+    handleHashChange() {
+        const hash = window.location.hash.substring(1);
+        const validStaticPages = ['contact', 'terms', 'refunds', 'privacy'];
+        if (validStaticPages.includes(hash)) {
+            this.setState('static', { page: hash }, false);
+        } else if (hash === 'dashboard' && Auth.isAuthenticated()) {
+            this.setState('dashboard', {}, false);
+        }
     },
 
     setLoading(loading) {
@@ -1448,7 +1466,7 @@ const App = {
                         <div style="margin-bottom: 2rem;">
                             <h4 style="color: var(--accent); margin-bottom: 0.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Operating Address</h4>
                             <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">
-                                Interimate Prep Solutions<br>
+                                Interimate<br>
                                 Gachibowli High-Tech Zone<br>
                                 Hyderabad, Telangana, 500032<br>
                                 India
