@@ -136,6 +136,15 @@ const App = {
         document.getElementById('nav-feedback').addEventListener('click', () => this.setState('feedback'));
         document.getElementById('nav-leaderboard').addEventListener('click', () => this.setState('leaderboard'));
         document.getElementById('nav-logout').addEventListener('click', () => this.showLogoutModal());
+
+        // Mobile Menu Toggle
+        const menuToggle = document.getElementById('mobile-menu-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        if (menuToggle && navLinks) {
+            menuToggle.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+            });
+        }
     },
 
     showLogoutModal() {
@@ -165,6 +174,11 @@ const App = {
 
     async setState(state, params = {}, pushHistory = true) {
         if (this.isListening) this.stopMic();
+
+        // Close mobile menu on state change
+        const navLinks = document.querySelector('.nav-links');
+        if (navLinks) navLinks.classList.remove('active');
+
         this.currentState = state;
         this.setLoading(true);
         if (state === 'dashboard' || state === 'leaderboard' || state === 'selection' || state === 'quiz' || state === 'interviews') {
