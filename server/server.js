@@ -117,6 +117,89 @@ const sendEmail = async (to, subject, text) => {
     });
 };
 
+// --- BADGE SYSTEM DEFINITIONS ---
+const BADGE_DEFS = {
+    'GENESIS_CREATOR': { title: 'Genesis Pioneer', description: 'Be the first to synthesize an AI question', stars: 1, color: '#d4ff00' },
+    'JAVA_EXPERT': { title: 'Java Grandmaster', description: 'Complete 100% of Java Module', stars: 4, color: '#ff3366' },
+    'SELENIUM_EXPERT': { title: 'Selenium Automator', description: 'Complete 100% of Selenium Module', stars: 4, color: '#00ccff' },
+    'SQL_EXPERT': { title: 'SQL Architect', description: 'Complete 100% of SQL Module', stars: 4, color: '#9933ff' },
+    'QUIZ_50': { title: 'Quiz Initiate', description: 'Solve 50 Theory Questions', stars: 1, color: '#00ffaa' },
+    'QUIZ_100': { title: 'Quiz Veteran', description: 'Solve 100 Theory Questions', stars: 2, color: '#00ffaa' },
+    'QUIZ_300': { title: 'Quiz Elite', description: 'Solve 300 Theory Questions', stars: 3, color: '#00ffaa' },
+    'CODE_50': { title: 'Code Initiate', description: 'Solve 50 Code Challenges', stars: 1, color: '#ffb300' },
+    'CODE_100': { title: 'Code Veteran', description: 'Solve 100 Code Challenges', stars: 2, color: '#ffb300' },
+    'CODE_300': { title: 'Code Elite', description: 'Solve 150 Code Challenges', stars: 3, color: '#ffb300' }
+};
+
+async function checkAndGrantBadges(username, isGenesis = false) {
+    try {
+        const [user, progress] = await Promise.all([
+            User.findOne({ username }),
+            Progress.findOne({ username })
+        ]);
+
+        if (!user || !progress) return [];
+
+        const earnedIds = user.badges.map(b => b.id);
+        const newBadgesTriggered = [];
+
+        // 0. Genesis Pioneer Check
+        if (isGenesis && !earnedIds.includes('GENESIS_CREATOR')) {
+            newBadgesTriggered.push('GENESIS_CREATOR');
+        }
+
+        // 1. Module Completion Checks
+        for (const cat of ['java', 'selenium', 'sql']) {
+            const data = progress.categories[cat] || {};
+            const mcqSolved = Object.values(data.mcq || {}).filter(q => q.status === 'correct').length;
+            const codeSolved = Object.values(data.practice || {}).filter(q => q.status === 'correct').length;
+            const badgeId = `${cat.toUpperCase()}_EXPERT`;
+
+            if (mcqSolved >= 100 && codeSolved >= 50 && !earnedIds.includes(badgeId)) {
+                newBadgesTriggered.push(badgeId);
+            }
+        }
+
+        // 2. Global Totals Checks
+        let totalMCQ = 0;
+        let totalCode = 0;
+        Object.values(progress.categories).forEach(cat => {
+            totalMCQ += Object.values(cat.mcq || {}).filter(q => q.status === 'correct').length;
+            totalCode += Object.values(cat.practice || {}).filter(q => q.status === 'correct').length;
+        });
+
+        const mcqMilestones = [50, 100, 300];
+        mcqMilestones.forEach(m => {
+            const bid = `QUIZ_${m}`;
+            if (totalMCQ >= m && !earnedIds.includes(bid)) newBadgesTriggered.push(bid);
+        });
+
+        const codeMilestones = [50, 100, 150];
+        codeMilestones.forEach(m => {
+            const bid = `CODE_${m}`;
+            if (totalCode >= m && !earnedIds.includes(bid)) newBadgesTriggered.push(bid);
+        });
+
+        // 3. Save new badges if any
+        if (newBadgesTriggered.length > 0) {
+            const badgeObjects = newBadgesTriggered.map(bid => ({
+                id: bid,
+                ...BADGE_DEFS[bid],
+                earnedAt: new Date().toISOString(),
+                verificationId: `INT-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${username.substring(0, 3).toUpperCase()}`
+            }));
+
+            user.badges = [...user.badges, ...badgeObjects];
+            await user.save();
+            console.log(`+++ [BADGES_GRANTED] ${username}:`, newBadgesTriggered);
+            return badgeObjects;
+        }
+    } catch (err) {
+        console.error('[BADGE_ENGINE] Error:', err);
+    }
+    return [];
+}
+
 // Middleware to verify JWT
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -386,6 +469,7 @@ app.get('/api/questions/:category', authenticateToken, async (req, res) => {
                 quizData.push(firstQuiz);
                 await writeJSON(quizFile, quizData);
                 console.log(`[API] First Quiz generated and saved successfully.`);
+                await checkAndGrantBadges(req.user.empId, true);
             } catch (err) {
                 console.error(`[API] Gemini Quiz Generation Error:`, err.message);
             }
@@ -398,6 +482,9 @@ app.get('/api/questions/:category', authenticateToken, async (req, res) => {
                 codeData.push(firstCode);
                 await writeJSON(codeFile, codeData);
                 console.log(`[API] First Code Challenge generated and saved successfully.`);
+                // Trigger Badge Engine for genesis
+                const b = await checkAndGrantBadges(req.user.empId, true);
+                // (Optional: send in response if needed, but this is a GET)
             } catch (err) {
                 console.error(`[API] Gemini Code Generation Error:`, err.message);
             }
@@ -441,7 +528,10 @@ app.post('/api/questions/:category/next', authenticateToken, async (req, res) =>
         questions.push(newQuestion);
         await writeJSON(fileName, questions);
 
-        res.json(newQuestion);
+        // Trigger Badge Engine for genesis
+        const newBadges = await checkAndGrantBadges(req.user.empId, true);
+
+        res.json({ ...newQuestion, newBadges: newBadges.length > 0 ? newBadges : null });
     } catch (error) {
         console.error('Error generating next question:', error);
         res.status(500).json({ message: 'Error generating next question' });
@@ -548,10 +638,26 @@ app.post('/api/progress', authenticateToken, async (req, res) => {
 
         // 6. Progress Management (rest)
         await p.save();
-        res.json({ message: 'Progress updated' });
+
+        // Trigger Badge Engine
+        const newBadges = await checkAndGrantBadges(username);
+
+        res.json({
+            message: 'Progress updated',
+            newBadges: newBadges.length > 0 ? newBadges : null
+        });
     } catch (error) {
         console.error('Progress Update Error:', error);
         res.status(500).json({ message: 'Failed to update progress' });
+    }
+});
+
+app.get('/api/user/badges', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findOne({ username: req.user.empId });
+        res.json(user.badges || []);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch badges' });
     }
 });
 

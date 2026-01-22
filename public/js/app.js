@@ -153,6 +153,7 @@ const App = {
         document.getElementById('nav-pricing').addEventListener('click', () => this.setState('pricing'));
         document.getElementById('nav-feedback').addEventListener('click', () => this.setState('feedback'));
         document.getElementById('nav-leaderboard').addEventListener('click', () => this.setState('leaderboard'));
+        document.getElementById('nav-badges').addEventListener('click', () => this.setState('badges'));
         document.getElementById('nav-logout').addEventListener('click', () => this.showLogoutModal());
 
         // Mobile Menu Toggle
@@ -310,6 +311,10 @@ const App = {
             case 'leaderboard':
                 if (document.getElementById('nav-leaderboard')) document.getElementById('nav-leaderboard').classList.add('active');
                 this.renderLeaderboard(content);
+                break;
+            case 'badges':
+                if (document.getElementById('nav-badges')) document.getElementById('nav-badges').classList.add('active');
+                this.renderBadges(content);
                 break;
             case 'selection':
                 this.renderSelection(content);
@@ -1604,6 +1609,79 @@ const App = {
                 </div>
             </div>
         `;
+    },
+
+    async renderBadges(container) {
+        this.setLoading(true);
+        let badges = [];
+        try {
+            const res = await fetch('/api/user/badges', { headers: Auth.getAuthHeader() });
+            badges = await res.json();
+        } catch (error) {
+            console.error('Error fetching badges:', error);
+        }
+        this.setLoading(false);
+
+        container.innerHTML = `
+            <div class="dashboard-header" style="margin-bottom: 4rem;">
+                <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">Aura Accolades</h1>
+                <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Social verification protocol // Displaying earned badges</p>
+            </div>
+            
+            <div class="dashboard-grid">
+                ${badges.length === 0 ? `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 4rem; border: 1px dashed #222; border-radius: 8px;">
+                        <p style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase;">NO PROTOCOL BADGES DETECTED</p>
+                        <p style="color: #444; font-size: 0.7rem; margin-top: 1rem;">Complete modules or solve challenges to unlock elite badges.</p>
+                        <button class="btn-primary" style="margin-top: 2rem; width: auto; padding: 0.8rem 2rem;" onclick="App.setState('dashboard')">START GRINDING</button>
+                    </div>
+                ` : badges.map(badge => `
+                    <div class="card badge-card" onclick='App.showBadgeHighlight(${JSON.stringify(badge).replace(/'/g, "&apos;")})'>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div class="badge-stars" style="color: ${badge.color || 'var(--accent)'};">
+                                ${Array(badge.stars).fill('<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>').join('')}
+                            </div>
+                            <div style="font-family: var(--font-mono); font-size: 0.5rem; color: var(--accent); opacity: 0.5;">ID: ${badge.id}</div>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 900; text-transform: uppercase; margin-top: 2rem; color: #fff; letter-spacing: -0.02em;">${badge.title}</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.5rem; font-family: var(--font-mono); line-height: 1.4;">${badge.description}</p>
+                        <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: flex-end;">
+                            <span style="font-size: 0.6rem; color: var(--accent); opacity: 0.7; font-family: var(--font-mono); text-transform: uppercase;">Earned: ${new Date(badge.earnedAt).toLocaleDateString()}</span>
+                            <button class="btn-secondary" style="font-size: 0.6rem; padding: 0.3rem 0.8rem; height: auto;">VIEW FULL</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    },
+
+    showBadgeHighlight(badge) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="badge-highlight-container">
+                <div class="badge-glow" style="background: radial-gradient(circle, ${badge.color || 'var(--accent)'}44 0%, transparent 70%);"></div>
+                <div class="badge-modal-content">
+                    <div class="badge-interimate">INTERIMATE // SIGMA CORE</div>
+                    <div class="badge-star-highlight" style="color: ${badge.color || 'var(--accent)'};">
+                        ${Array(badge.stars).fill('<svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>').join('')}
+                    </div>
+                    <h2 class="badge-title-large">${badge.title}</h2>
+                    <p class="badge-description-large">${badge.description}</p>
+                    <div class="badge-user-info">
+                        <div class="verified-label">VERIFIED_RECIPIENT</div>
+                        <div class="badge-username">${Auth.empId}</div>
+                    </div>
+                    <div class="badge-verification-footer">
+                        <div>ID: ${badge.verificationId}</div>
+                        <div>DATE: ${new Date(badge.earnedAt).toLocaleDateString()}</div>
+                    </div>
+                    <button class="btn-primary" onclick="this.closest('.modal-overlay').remove()" style="margin-top: 3rem; width: auto; padding: 0.8rem 3rem;">REDACT VIEW</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
     }
 };
 

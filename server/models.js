@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
     interviewCredits: { type: Number, default: 0 },
     lastTopicInterview: { type: Date, default: null },
     lastResumeInterview: { type: Date, default: null },
+    badges: { type: Array, default: [] }, // [{ id, title, description, earnedAt, verificationId, stars }]
     createdAt: { type: Date, default: Date.now }
 });
 
