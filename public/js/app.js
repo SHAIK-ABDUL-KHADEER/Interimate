@@ -193,6 +193,16 @@ const App = {
     async setState(state, params = {}, pushHistory = true) {
         if (this.isListening) this.stopMic();
 
+        // Sync URL Hash
+        if (state === 'static' && params.page) {
+            if (window.location.hash !== `#${params.page}`) {
+                window.location.hash = params.page;
+            }
+        } else if (window.location.hash) {
+            // Strip hash for functional pages to avoid URL/State traps
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+
         // Close mobile menu on state change
         const navLinks = document.querySelector('.nav-links');
         if (navLinks) navLinks.classList.remove('active');
