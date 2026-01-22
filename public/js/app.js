@@ -667,6 +667,55 @@ const App = {
                     </div>
                     `;
         }).join('')}
+                
+                <!-- Future Modules -->
+                <div class="card coming-soon">
+                    <div class="card-icon" style="color: #333;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">Functional Testing</h3>
+                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">IN_CALIBRATION</p>
+                </div>
+
+                <div class="card coming-soon">
+                    <div class="card-icon" style="color: #333;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/></svg>
+                    </div>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">TestNG Framework</h3>
+                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">PROTOCOL_PENDING</p>
+                </div>
+
+                <div class="card coming-soon">
+                    <div class="card-icon" style="color: #333;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M10 9H8"/></svg>
+                    </div>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">Apache POI</h3>
+                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">DATA_STREAM_SYNC</p>
+                </div>
+
+                <div class="card coming-soon">
+                    <div class="card-icon" style="color: #333;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
+                    </div>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">Cucumber BDD</h3>
+                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">BEHAVIOR_ANALYSIS</p>
+                </div>
+
+                <div class="card coming-soon">
+                    <div class="card-icon" style="color: #333;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12A10 10 0 1 1 12 2a10 10 0 0 1 10 10Z"/><path d="M22 2 12 12"/><path d="M2 12h10"/><path d="m12 12 5 10"/><path d="m12 12-5 10"/></svg>
+                    </div>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">DevOps Pipeline</h3>
+                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">INFRA_ORCHESTRATION</p>
+                </div>
+
+                <div class="card coming-soon">
+                    <div class="card-icon" style="color: #333;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.4 3 10.2 8 12 5-1.8 8-6.6 8-12a8 8 0 0 0-8-8Z"/><path d="M12 7v6"/><path d="M9 10h6"/></svg>
+                    </div>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">GenAI Systems</h3>
+                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">NEURAL_TRAINING</p>
+                </div>
             </div>
         `;
     },
@@ -750,6 +799,18 @@ const App = {
                     </div>
                     <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem;">Resume Based</h3>
                     <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Personalized AI interviews based on your skills and experience levels.</p>
+                </div>
+
+                <!-- Role + Project Based -->
+                <div class="card interview-card coming-soon">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="card-icon" style="color: #333;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                        <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #555; padding: 0.2rem 0.5rem; border: 1px solid #333; border-radius: 2px;">ROLE_SPECIFIC</div>
+                    </div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #555;">Role + Project Based</h3>
+                    <p style="color: #444; font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Simulate specialized role interviews (SDET, QA Lead) with project context.</p>
                 </div>
 
                 <!-- Project Based (Coming Soon) -->
