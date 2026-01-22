@@ -1254,7 +1254,7 @@ footer {
     right: 0;
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1508,7 +1508,7 @@ footer {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1815,16 +1815,15 @@ footer {
 
 /* Locked Badge Styling */
 .badge-card.locked {
-    filter: grayscale(1) contrast(1.2);
-    background: rgba(0, 0, 0, 0.95) !important;
-    opacity: 0.4;
+    background: rgba(15, 15, 15, 0.8) !important;
+    opacity: 0.7;
     cursor: not-allowed;
     pointer-events: auto !important;
+    border: 1px dashed rgba(255, 255, 255, 0.1) !important;
 }
 
 .badge-card.locked:hover {
-    filter: grayscale(0.7) contrast(1.5);
-    opacity: 0.6;
+    opacity: 0.9;
     transform: scale(1.01);
 }
 
@@ -1839,12 +1838,12 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #ff3333;
+    color: var(--accent);
     font-family: var(--font-mono);
     font-weight: 950;
     letter-spacing: 0.3em;
     font-size: 0.9rem;
     z-index: 10;
-    backdrop-filter: blur(8px);
-    border: 1px solid #ff3333;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--accent);
 }

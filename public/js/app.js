@@ -21,11 +21,19 @@ const App = {
         window.addEventListener('hashchange', () => this.handleHashChange());
 
         // Initial route check
-        if (window.location.hash) {
-            this.handleHashChange();
+        if (Auth.isAuthenticated()) {
+            if (window.location.hash) {
+                this.handleHashChange();
+            } else {
+                this.setState('dashboard', {}, false);
+            }
         } else {
-            this.render();
-            history.replaceState({ state: this.currentState, params: {} }, '');
+            if (window.location.hash) {
+                this.handleHashChange();
+            } else {
+                this.render();
+                history.replaceState({ state: this.currentState, params: {} }, '');
+            }
         }
 
         this.attachGlobalListeners();
@@ -333,6 +341,9 @@ const App = {
         }
 
         header.classList.remove('hidden');
+        if (Object.keys(this.userProgress).length === 0) {
+            this.loadProgress(); // Fire and forget sync if empty
+        }
         this.updateGlobalCredits();
 
         switch (this.currentState) {
@@ -722,48 +733,48 @@ const App = {
                     <div class="card-icon" style="color: #333;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     </div>
-                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">Functional Testing</h3>
-                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">IN_CALIBRATION</p>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #888;">Functional Testing</h3>
+                    <p style="color: #666; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">IN_CALIBRATION</p>
                 </div>
 
                 <div class="card coming-soon">
                     <div class="card-icon" style="color: #333;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/></svg>
                     </div>
-                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">TestNG Framework</h3>
-                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">PROTOCOL_PENDING</p>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #888;">TestNG Framework</h3>
+                    <p style="color: #666; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">PROTOCOL_PENDING</p>
                 </div>
 
                 <div class="card coming-soon">
                     <div class="card-icon" style="color: #333;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M10 9H8"/></svg>
                     </div>
-                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">Apache POI</h3>
-                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">DATA_STREAM_SYNC</p>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #888;">Apache POI</h3>
+                    <p style="color: #666; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">DATA_STREAM_SYNC</p>
                 </div>
 
                 <div class="card coming-soon">
                     <div class="card-icon" style="color: #333;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
                     </div>
-                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">Cucumber BDD</h3>
-                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">BEHAVIOR_ANALYSIS</p>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #888;">Cucumber BDD</h3>
+                    <p style="color: #666; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">BEHAVIOR_ANALYSIS</p>
                 </div>
 
                 <div class="card coming-soon">
                     <div class="card-icon" style="color: #333;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12A10 10 0 1 1 12 2a10 10 0 0 1 10 10Z"/><path d="M22 2 12 12"/><path d="M2 12h10"/><path d="m12 12 5 10"/><path d="m12 12-5 10"/></svg>
                     </div>
-                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">DevOps Pipeline</h3>
-                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">INFRA_ORCHESTRATION</p>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #888;">DevOps Pipeline</h3>
+                    <p style="color: #666; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">INFRA_ORCHESTRATION</p>
                 </div>
 
                 <div class="card coming-soon">
                     <div class="card-icon" style="color: #333;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.4 3 10.2 8 12 5-1.8 8-6.6 8-12a8 8 0 0 0-8-8Z"/><path d="M12 7v6"/><path d="M9 10h6"/></svg>
                     </div>
-                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #444;">GenAI Systems</h3>
-                    <p style="color: #333; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">NEURAL_TRAINING</p>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #888;">GenAI Systems</h3>
+                    <p style="color: #666; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">NEURAL_TRAINING</p>
                 </div>
             </div>
         `;
@@ -1701,21 +1712,21 @@ const App = {
                         <div class="card badge-card ${!isEarned ? 'locked' : ''}" 
                              ${isEarned ? `onclick='App.showBadgeHighlight(${JSON.stringify(earned).replace(/'/g, "&apos;")})'` : ''}>
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                <div class="badge-stars" style="color: ${isEarned ? meta.color : '#222'};">
+                                <div class="badge-stars" style="color: ${isEarned ? meta.color : '#111'};">
                                     ${Array(meta.stars).fill('<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>').join('')}
                                 </div>
                                 <div style="font-family: var(--font-mono); font-size: 0.5rem; color: var(--accent); opacity: ${isEarned ? 0.5 : 0.15};">MODULE: ${id}</div>
                             </div>
-                            <h3 style="font-size: 1.5rem; font-weight: 900; text-transform: uppercase; margin-top: 2rem; color: ${isEarned ? '#fff' : '#333'}; letter-spacing: -0.02em;">${meta.title}</h3>
-                            <p style="color: ${isEarned ? 'var(--text-secondary)' : '#222'}; font-size: 0.75rem; margin-top: 0.5rem; font-family: var(--font-mono); line-height: 1.4;">${meta.description}</p>
+                            <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 2rem; color: ${isEarned ? '#fff' : '#aaa'}; letter-spacing: -0.02em;">${meta.title}</h3>
+                            <p style="color: ${isEarned ? 'var(--text-secondary)' : '#777'}; font-size: 0.75rem; margin-top: 0.5rem; font-family: var(--font-mono); line-height: 1.4;">${meta.description}</p>
                             
                             <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: flex-end;">
                                 ${isEarned ? `
                                     <span style="font-size: 0.6rem; color: var(--accent); opacity: 0.7; font-family: var(--font-mono); text-transform: uppercase;">SECURED: ${new Date(earned.earnedAt).toLocaleDateString()}</span>
                                     <button class="btn-secondary" style="font-size: 0.6rem; padding: 0.3rem 0.8rem; height: auto;">VIEW AURA</button>
                                 ` : `
-                                    <span style="font-size: 0.6rem; color: #333; font-family: var(--font-mono); text-transform: uppercase;">PROTOCOL_LOCKED</span>
-                                    <div style="color: #222;">
+                                    <span style="font-size: 0.6rem; color: #444; font-family: var(--font-mono); text-transform: uppercase;">PROTOCOL_LOCKED</span>
+                                    <div style="color: #666;">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                                     </div>
                                 `}
