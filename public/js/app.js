@@ -724,27 +724,7 @@ const App = {
                 <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Select your evaluation protocol or continue an active session.</p>
             </div>
 
-            ${activeInterviews.length > 0 ? `
-            <div class="active-sessions-section" style="margin-bottom: 4rem;">
-                <h2 style="font-size: 1.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 2rem;">Active Sessions <span style="opacity: 0.5;">[ PENDING_CALIBRATION ]</span></h2>
-                <div class="dashboard-grid">
-                    ${activeInterviews.map(i => `
-                        <div class="card interview-card" onclick="App.resumeInterview('${i._id}')">
-                            <div style="display: flex; justify-content: space-between;">
-                                <div class="card-icon" style="color: var(--accent);">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="m19 9-7 7-7-7"/></svg>
-                                </div>
-                                <div style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); border: 1px solid var(--accent); background: #000; padding: 0.2rem 0.5rem; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.1em;">RESUME #QC-${i.history.length}/10</div>
-                            </div>
-                            <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem;">${i.type === 'topic' ? i.topics.join(' + ') : 'RESUME TRACK'}</h3>
-                            <p style="color: var(--text-secondary); font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">Started: ${new Date(i.createdAt).toLocaleDateString()}</p>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            ` : ''}
-
-            <div class="dashboard-grid">
+            <div class="dashboard-grid" style="margin-bottom: 4rem;">
                 <!-- Topic Based -->
                 <div class="card interview-card" onclick="App.renderTopicInterviewSetup()">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -784,6 +764,26 @@ const App = {
                     <p style="color: #444; font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Evaluate your practical implementation by uploading your project repository.</p>
                 </div>
             </div>
+
+            ${activeInterviews.length > 0 ? `
+            <div class="active-sessions-section" style="margin-bottom: 4rem;">
+                <h2 style="font-size: 1.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 2rem;">Active Sessions <span style="opacity: 0.5;">[ PENDING_CALIBRATION ]</span></h2>
+                <div class="dashboard-grid">
+                    ${activeInterviews.map(i => `
+                        <div class="card interview-card" onclick="App.resumeInterview('${i._id}')">
+                            <div style="display: flex; justify-content: space-between;">
+                                <div class="card-icon" style="color: var(--accent);">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="m19 9-7 7-7-7"/></svg>
+                                </div>
+                                <div style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); border: 1px solid var(--accent); background: #000; padding: 0.2rem 0.5rem; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.1em;">RESUME #QC-${i.history.length}/10</div>
+                            </div>
+                            <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem;">${i.type === 'topic' ? i.topics.join(' + ') : 'RESUME TRACK'}</h3>
+                            <p style="color: var(--text-secondary); font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">Started: ${new Date(i.createdAt).toLocaleDateString()}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            ` : ''}
 
             ${completedInterviews.length > 0 ? `
             <div class="history-section" style="margin-top: 6rem;">
