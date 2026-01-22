@@ -92,6 +92,13 @@ const App = {
         if (!container) return;
 
         newBadges.forEach(badge => {
+            // Update local state
+            if (!this.userProgress.badges) this.userProgress.badges = [];
+            if (!this.userProgress.badges.some(b => b.id === badge.id)) {
+                this.userProgress.badges.push(badge);
+            }
+            this.updateGlobalCredits();
+
             const notification = document.createElement('div');
             notification.className = `sigma-notify success pulse-glow`;
             notification.style.borderLeft = `4px solid ${badge.color || 'var(--accent)'}`;

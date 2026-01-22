@@ -45,6 +45,7 @@ const Quiz = {
             console.log('SIGMA_HEADER:', response.headers.get('X-Core-Sigma'));
 
             const data = await response.json();
+            if (data.newBadges) App.showBadgeUnlockNotification(data.newBadges);
             console.log('BODY:', data);
 
             if (!response.ok) {

@@ -146,6 +146,8 @@ async function checkAndGrantBadges(username, isGenesis = false) {
 
         if (!user || !progress) return [];
 
+        console.log(`[BADGE_ENGINE] Checking for ${username} (isGenesis: ${isGenesis})`);
+
         const earnedIds = user.badges.map(b => b.id);
         const newBadgesTriggered = [];
 
@@ -210,9 +212,10 @@ async function checkAndGrantBadges(username, isGenesis = false) {
 
             user.badges = [...user.badges, ...badgeObjects];
             await user.save();
-            console.log(`+++ [BADGES_GRANTED] ${username}:`, newBadgesTriggered);
+            console.log(`+++ [BADGES_GRANTED] ${username} successfully secured badges:`, newBadgesTriggered);
             return badgeObjects;
         }
+        console.log(`[BADGE_ENGINE] No new badges triggered for ${username}`);
     } catch (err) {
         console.error('[BADGE_ENGINE] Error:', err);
     }
@@ -468,6 +471,7 @@ app.get('/api/questions/:category', authenticateToken, async (req, res) => {
     console.log(`>>> [ROUTE_HIT] /api/questions/${category}`);
 
     try {
+        let genesisBadges = null;
         const quizFile = `${category}_quiz.json`;
         const codeFile = `${category}_code.json`;
 
@@ -503,7 +507,7 @@ app.get('/api/questions/:category', authenticateToken, async (req, res) => {
                 console.log(`[API] First Code Challenge generated and saved successfully.`);
                 // Trigger Badge Engine for genesis
                 const b = await checkAndGrantBadges(req.user.empId, true);
-                // (Optional: send in response if needed, but this is a GET)
+                if (b && b.length > 0) genesisBadges = b;
             } catch (err) {
                 console.error(`[API] Gemini Code Generation Error:`, err.message);
             }
@@ -516,7 +520,11 @@ app.get('/api/questions/:category', authenticateToken, async (req, res) => {
             });
         }
 
-        res.json({ mcq: quizData, practice: codeData });
+        res.json({
+            mcq: quizData,
+            practice: codeData,
+            newBadges: genesisBadges
+        });
     } catch (error) {
         console.error('[API] Unexpected Error:', error);
         res.status(500).json({ message: 'Internal server error while fetching modules.' });
