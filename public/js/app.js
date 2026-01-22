@@ -801,7 +801,7 @@ const App = {
                     <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Personalized AI interviews based on your skills and experience levels.</p>
                 </div>
 
-                <!-- Role + Project Based -->
+                <!-- Role + Resume Based -->
                 <div class="card interview-card coming-soon">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div class="card-icon" style="color: #333;">
@@ -809,8 +809,8 @@ const App = {
                         </div>
                         <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #555; padding: 0.2rem 0.5rem; border: 1px solid #333; border-radius: 2px;">ROLE_SPECIFIC</div>
                     </div>
-                    <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #555;">Role + Project Based</h3>
-                    <p style="color: #444; font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Simulate specialized role interviews (SDET, QA Lead) with project context.</p>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #555;">Role + Resume Based</h3>
+                    <p style="color: #444; font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Simulate specialized role interviews (SDET, QA Lead) with resume context.</p>
                 </div>
 
                 <!-- Project Based (Coming Soon) -->
