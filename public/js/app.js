@@ -895,8 +895,6 @@ const App = {
                 </div>
 
                 <!-- Role + Resume Based -->
-                <div class="card interview-card coming-soon">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div class="card interview-card ${this.userProgress.plan === 'paid' ? '' : 'paid-only'}" onclick="${this.userProgress.plan === 'paid' ? "App.renderRoleResumeInterviewSetup()" : ""}">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div class="card-icon" style="color: var(--accent);">
@@ -914,10 +912,10 @@ const App = {
                         <div class="card-icon" style="color: var(--accent);">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                         </div>
-                        <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #555; padding: 0.2rem 0.5rem; border: 1px solid #333; border-radius: 2px;">IN_CALIBRATION</div>
+                        <div style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); opacity: 0.5; padding: 0.2rem 0.5rem; border: 1px solid rgba(212,255,0,0.2); border-radius: 2px;">IN_CALIBRATION</div>
                     </div>
-                    <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #555;">Project Based</h3>
-                    <p style="color: #444; font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Evaluate your practical implementation by uploading your project repository.</p>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; opacity: 0.3;">Project Based</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; line-height: 1.5; opacity: 0.5;">Evaluate your practical implementation by uploading your project repository.</p>
                 </div>
             </div>
 
