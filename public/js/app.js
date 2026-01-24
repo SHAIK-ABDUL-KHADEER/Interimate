@@ -244,6 +244,7 @@ const App = {
 
     async setState(state, params = {}, pushHistory = true) {
         if (this.isListening) this.stopMic();
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
         // Sync URL Hash
         if (state === 'static' && params.page) {
@@ -331,6 +332,25 @@ const App = {
             if (globalEl) globalEl.classList.add('hidden');
             if (badgeEl) badgeEl.classList.add('hidden');
         }
+    },
+
+    speakText(text) {
+        if (!('speechSynthesis' in window)) return;
+
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        // Select a professional voice
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('English (United States)'));
+        if (preferredVoice) utterance.voice = preferredVoice;
+
+        window.speechSynthesis.speak(utterance);
     },
 
     render() {
@@ -1177,6 +1197,9 @@ const App = {
                 </div>
             </div>
         `;
+
+        // TTS: Read question aloud
+        this.speakText(data.question);
     },
 
     async submitInterviewAnswer() {
