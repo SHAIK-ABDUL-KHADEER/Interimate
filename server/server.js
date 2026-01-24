@@ -975,6 +975,16 @@ app.get('/api/interview/report/:id', authenticateToken, async (req, res) => {
     }
 });
 
+app.get('/api/interviews/list', authenticateToken, async (req, res) => {
+    try {
+        const interviews = await Interview.find({ username: req.user.empId }).sort({ createdAt: -1 });
+        res.json(interviews);
+    } catch (error) {
+        console.error('Fetch Interviews Error:', error);
+        res.status(500).json({ message: 'Failed to fetch interview history' });
+    }
+});
+
 // --- ADMIN COMMAND ROUTES ---
 
 app.get('/api/admin/stats', authenticateAdmin, async (req, res) => {

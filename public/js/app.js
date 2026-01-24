@@ -927,7 +927,7 @@ const App = {
                                 </div>
                                 <div style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); border: 1px solid var(--accent); background: #000; padding: 0.2rem 0.5rem; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.1em;">RESUME #QC-${i.history.length}/10</div>
                             </div>
-                            <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem;">${i.type === 'topic' ? i.topics.join(' + ') : 'RESUME TRACK'}</h3>
+                            <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem;">${i.type === 'topic' ? (i.topics || []).join(' + ') : 'RESUME TRACK'}</h3>
                             <p style="color: var(--text-secondary); font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">Started: ${new Date(i.createdAt).toLocaleDateString()}</p>
                         </div>
                     `).join('')}
@@ -951,7 +951,7 @@ const App = {
                         <tbody>
                             ${completedInterviews.map(i => `
                                 <tr style="border-bottom: 1px solid #111;">
-                                    <td style="padding: 1.5rem 1rem; text-transform: uppercase; font-weight: 700;">${i.type === 'topic' ? i.topics.join(', ') : 'RESUME_BASED'}</td>
+                                    <td style="padding: 1.5rem 1rem; text-transform: uppercase; font-weight: 700;">${i.type === 'topic' ? (i.topics || []).join(', ') : 'RESUME_BASED'}</td>
                                     <td style="padding: 1.5rem 1rem; color: var(--text-secondary);">${new Date(i.createdAt).toLocaleDateString()}</td>
                                     <td style="padding: 1.5rem 1rem;"><span style="color: var(--accent); font-weight: 900;">${i.report?.score || 'N/A'}/10</span></td>
                                     <td style="padding: 1.5rem 1rem; text-align: right;">
@@ -1181,7 +1181,7 @@ const App = {
             const data = await res.json();
 
             if (data.status === 'completed') {
-                this.renderInterviewReport(data.report);
+                this.renderInterviewReport(this.currentInterviewId);
             } else {
                 this.currentQuestionCount++;
                 this.renderInterviewSession(data.nextQuestion);
@@ -1251,47 +1251,7 @@ const App = {
     },
 
 
-    renderInterviewReport(report) {
-        const content = document.getElementById('content');
-        content.innerHTML = `
-            <div class="setup-container" style="max-width: 900px; text-align: left;">
-                <h1 style="font-size: 3rem; font-weight: 900; color: var(--accent); text-transform: uppercase; margin-bottom: 1rem;">Evaluation Report</h1>
-                <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.7rem; margin-bottom: 3rem;">Session Protocol // Termination_Success</p>
 
-                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; margin-bottom: 3rem;">
-                    <div style="text-align: center; padding: 2rem; border: 1px solid var(--accent); border-radius: 4px; background: rgba(212, 255, 0, 0.05);">
-                        <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); margin-bottom: 1rem;">SIGMA_SCORE</div>
-                        <div style="font-size: 5rem; font-weight: 950; color: var(--accent);">${report.score}</div>
-                        <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary);">OUT OF 10</div>
-                    </div>
-                    <div>
-                        <h3 style="color: #fff; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem;">Summary Assessment</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">${report.summary}</p>
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
-                    <div class="explanation-box" style="border-left-color: var(--success); background: rgba(0, 255, 102, 0.02);">
-                        <h4 style="color: var(--success);">Core Strengths</h4>
-                        <ul style="color: var(--text-secondary); font-size: 0.85rem; padding-left: 1rem; line-height: 1.8;">
-                            ${report.strengths.map(s => `<li>${s}</li>`).join('')}
-                        </ul>
-                    </div>
-                    <div class="explanation-box" style="border-left-color: var(--danger); background: rgba(255, 0, 51, 0.02);">
-                        <h4 style="color: var(--danger);">Growth Zones</h4>
-                        <ul style="color: var(--text-secondary); font-size: 0.85rem; padding-left: 1rem; line-height: 1.8;">
-                            ${report.improvements.map(i => `<li>${i}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn-primary" onclick="App.setState('dashboard')" style="width: auto;">BACK TO DASHBOARD</button>
-                    <button class="btn-secondary" onclick="App.setState('interviews')" style="width: auto;">NEW INTERVIEW</button>
-                </div>
-            </div>
-        `;
-    },
 
     renderPricing(container) {
         container.innerHTML = `
