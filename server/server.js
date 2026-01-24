@@ -257,6 +257,21 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+const authenticateAdmin = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.status(401).json({ message: 'ADMIN_ACCESS_REQUIRED' });
+
+    jwt.verify(token, SECRET_KEY, (err, data) => {
+        if (err || data.role !== 'admin') {
+            return res.status(403).json({ message: 'ADMIN_PROTOCOL_REJECTED' });
+        }
+        req.user = data;
+        next();
+    });
+};
+
 // --- AUTH ROUTES ---
 
 // 1. Send OTP
@@ -383,6 +398,21 @@ app.post('/api/login', async (req, res) => {
         console.error('Login Error:', error);
         res.status(500).json({ message: 'Login failed.' });
     }
+});
+
+// Admin Login Route
+app.post('/api/admin/login', (req, res) => {
+    const { username, password } = req.body;
+    if (username === 'admin' && password === '2457174') {
+        const token = jwt.sign({ empId: 'admin', role: 'admin' }, SECRET_KEY, { expiresIn: '12h' });
+        return res.json({ token });
+    }
+    res.status(401).json({ message: 'Invalid Admin Credentials' });
+});
+
+// Serve Admin Panel (Ghost Protocol)
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
 
 // 4. Forgot Password - Send OTP
@@ -852,13 +882,85 @@ app.get('/api/interview/report/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// Fetch all interviews for a user
-app.get('/api/interviews/list', authenticateToken, async (req, res) => {
+// --- ADMIN COMMAND ROUTES ---
+
+app.get('/api/admin/stats', authenticateAdmin, async (req, res) => {
     try {
-        const interviews = await Interview.find({ username: req.user.empId }).sort({ createdAt: -1 });
-        res.json(interviews);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching interviews' });
+        const [totalUsers, totalInterviews, totalProgress] = await Promise.all([
+            User.countDocuments({}),
+            Interview.countDocuments({ status: 'completed' }),
+            Progress.find({})
+        ]);
+
+        let totalMCQ = 0;
+        let totalPractice = 0;
+        totalProgress.forEach(p => {
+            Object.values(p.categories || {}).forEach(cat => {
+                totalMCQ += Object.values(cat.mcq || {}).filter(q => q.status === 'correct').length;
+                totalPractice += Object.values(cat.practice || {}).filter(q => q.status === 'correct').length;
+            });
+        });
+
+        res.json({
+            users: totalUsers,
+            interviews: totalInterviews,
+            mcq: totalMCQ,
+            practice: totalPractice
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Error fetching admin stats' });
+    }
+});
+
+app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
+    try {
+        const users = await User.find({}, '-password').sort({ createdAt: -1 });
+        const progressData = await Progress.find({});
+        const interviewData = await Interview.find({ status: 'completed' });
+
+        const detailedUsers = users.map(u => {
+            const p = progressData.find(prog => prog.username === u.username);
+            const userInterviews = interviewData.filter(i => i.username === u.username);
+
+            let mcq = 0, practice = 0;
+            if (p) {
+                Object.values(p.categories || {}).forEach(cat => {
+                    mcq += Object.values(cat.mcq || {}).filter(q => q.status === 'correct').length;
+                    practice += Object.values(cat.practice || {}).filter(q => q.status === 'correct').length;
+                });
+            }
+
+            return {
+                username: u.username,
+                email: u.email,
+                plan: u.plan,
+                credits: u.interviewCredits,
+                mcq,
+                practice,
+                interviews: userInterviews.length,
+                joined: u.createdAt
+            };
+        });
+
+        res.json(detailedUsers);
+    } catch (err) {
+        res.status(500).json({ message: 'Error fetching user list' });
+    }
+});
+
+app.get('/api/admin/user/:username', authenticateAdmin, async (req, res) => {
+    try {
+        const [user, progress, interviews] = await Promise.all([
+            User.findOne({ username: req.params.username }, '-password'),
+            Progress.findOne({ username: req.params.username }),
+            Interview.find({ username: req.params.username }).sort({ createdAt: -1 })
+        ]);
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        res.json({ user, progress, interviews });
+    } catch (err) {
+        res.status(500).json({ message: 'Error fetching user details' });
     }
 });
 
