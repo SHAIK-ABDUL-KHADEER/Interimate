@@ -92,7 +92,11 @@ async function getNextInterviewQuestion(interview) {
     }
 
     // Fallback for Resume-based or Cache failures
-    if (interview.type === 'resume') {
+    if (interview.type === 'role-resume') {
+        context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} for the specific role of: "${interview.targetRole}".
+        Evaluation Context: You must weigh their Resume history against the requirements of the "${interview.targetRole}" position.
+        Resume Content: ${interview.resumeText}`;
+    } else if (interview.type === 'resume') {
         context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} based on their resume. 
         Resume Content: ${interview.resumeText}`;
     } else {
@@ -143,7 +147,7 @@ async function generateFinalReport(interview) {
     const prompt = `
         You are a Senior Technical Recruiter. Evaluate this candidate based on their 10-question interview session.
         Candidate Name: ${interview.interviewerName}
-        Topics/Context: ${interview.type === 'topic' ? interview.topics.join(', ') : 'Resume Based'}
+        Topics/Context: ${interview.type === 'topic' ? interview.topics.join(', ') : (interview.type === 'role-resume' ? `Role: ${interview.targetRole} + Resume` : 'Resume Based')}
         Full Interview History: ${JSON.stringify(interview.history)}
 
         Task: Provide a detailed assessment.

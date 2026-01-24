@@ -38,9 +38,10 @@ const progressSchema = new mongoose.Schema({
 // Interview Schema
 const interviewSchema = new mongoose.Schema({
     username: { type: String, required: true },
-    type: { type: String, required: true }, // topic, resume
+    type: { type: String, required: true }, // topic, resume, role-resume
     topics: { type: [String], default: [] },
     resumeText: { type: String, default: '' },
+    targetRole: { type: String, default: '' },
     interviewerName: { type: String, default: 'Agent Sigma' },
     history: { type: [Object], default: [] }, // [{ question, answer, feedback }]
     status: { type: String, default: 'active' }, // active, completed

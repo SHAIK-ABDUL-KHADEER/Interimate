@@ -719,16 +719,21 @@ app.get('/api/diag', (req, res) => {
 
 // 7. Interview Engine
 app.post('/api/interview/start', authenticateToken, upload.single('resume'), async (req, res) => {
-    const { type, topics, interviewerName } = req.body;
+    const { type, topics, interviewerName, targetRole } = req.body;
     const empId = req.user.empId;
 
     try {
         const user = await User.findOne({ username: empId });
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        // Guard: Paid plan check for resume
-        if (type === 'resume' && user.plan !== 'paid') {
-            return res.status(403).json({ message: 'Resume interviews are exclusive to paid users.' });
+        // Guard: Paid plan check for resume/role-resume
+        if ((type === 'resume' || type === 'role-resume') && user.plan !== 'paid') {
+            return res.status(403).json({ message: 'Professional evaluations are exclusive to paid users.' });
+        }
+
+        // Validate Role + Resume requirements
+        if (type === 'role-resume' && (!targetRole || targetRole.trim().length < 3)) {
+            return res.status(400).json({ message: 'Target Role is required for this protocol.' });
         }
 
         // Guard: Credits check
@@ -756,6 +761,7 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
             type,
             topics: type === 'topic' ? JSON.parse(topics) : [],
             resumeText,
+            targetRole: type === 'role-resume' ? targetRole : '',
             interviewerName: interviewerName || 'Agent Sigma',
             status: 'active'
         });

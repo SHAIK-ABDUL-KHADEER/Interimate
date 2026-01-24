@@ -877,13 +877,15 @@ const App = {
                 <!-- Role + Resume Based -->
                 <div class="card interview-card coming-soon">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div class="card-icon" style="color: #333;">
+                <div class="card interview-card ${this.userProgress.plan === 'paid' ? '' : 'paid-only'}" onclick="${this.userProgress.plan === 'paid' ? "App.renderRoleResumeInterviewSetup()" : ""}">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="card-icon" style="color: var(--accent);">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         </div>
-                        <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #555; padding: 0.2rem 0.5rem; border: 1px solid #333; border-radius: 2px;">ROLE_SPECIFIC</div>
+                        <div style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); padding: 0.2rem 0.5rem; border: 1px solid var(--accent); border-radius: 2px;">ROLE_SPECIFIC</div>
                     </div>
-                    <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #555;">Role + Resume Based</h3>
-                    <p style="color: #444; font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Simulate specialized role interviews (SDET, QA Lead) with resume context.</p>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem;">Role + Resume Based</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; line-height: 1.5;">Simulate specialized role interviews (SDET, QA Lead) with resume context.</p>
                 </div>
 
                 <!-- Project Based (Coming Soon) -->
@@ -1008,6 +1010,46 @@ const App = {
         `;
     },
 
+    renderRoleResumeInterviewSetup() {
+        const content = document.getElementById('content');
+        content.innerHTML = `
+            <div class="setup-container">
+                <button class="nav-btn" onclick="App.setState('interviews')" style="margin-bottom: 2rem;">← BACK TO TRACKS</button>
+                <h2 class="setup-title">Role + Resume Protocol</h2>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 2rem; text-transform: uppercase; letter-spacing: 0.1em;">Targeted evaluation based on your resume and intended position.</p>
+
+                <div class="form-group" style="margin-bottom: 2rem;">
+                    <label>Target Role / Position</label>
+                    <input type="text" id="target-role" placeholder="e.g. Senior SDET Lead, Automation Architect (Java)">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 2rem;">
+                    <label>Resume Upload (PDF/DOCX)</label>
+                    <div class="file-upload-box" onclick="document.getElementById('role-resume-file').click()">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 1rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <div id="role-file-info">BROWSE FILE OR DROP HERE</div>
+                        <input type="file" id="role-resume-file" hidden accept=".pdf,.doc,.docx" onchange="App.handleRoleFileSelect(this)">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Interviewer Greeting Name</label>
+                    <input type="text" id="interview-name" placeholder="Agent Sigma" value="${Auth.empId || ''}">
+                </div>
+
+                <button class="btn-primary" style="margin-top: 2rem;" onclick="App.startInterview('role-resume')">INITIALIZE MISSION</button>
+            </div>
+        `;
+    },
+
+    handleRoleFileSelect(input) {
+        const info = document.getElementById('role-file-info');
+        if (input.files && input.files[0]) {
+            info.textContent = `READY: ${input.files[0].name.toUpperCase()}`;
+            info.style.color = 'var(--accent)';
+        }
+    },
+
     handleFileSelect(input) {
         const info = document.getElementById('file-info');
         if (input.files && input.files[0]) {
@@ -1030,6 +1072,14 @@ const App = {
         } else if (type === 'resume') {
             const fileInput = document.getElementById('resume-file');
             if (!fileInput.files[0]) return this.notify('Please upload your resume', 'error');
+            formData.append('resume', fileInput.files[0]);
+        } else if (type === 'role-resume') {
+            const role = document.getElementById('target-role').value;
+            const fileInput = document.getElementById('role-resume-file');
+            if (!role || role.trim().length < 3) return this.notify('Please specify a target role', 'warning');
+            if (!fileInput.files[0]) return this.notify('Please upload your resume', 'error');
+
+            formData.append('targetRole', role);
             formData.append('resume', fileInput.files[0]);
         }
 
