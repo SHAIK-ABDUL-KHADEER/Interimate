@@ -104,6 +104,10 @@ async function getNextInterviewQuestion(interview) {
 
         Task: Ask the NEXT relevant technical question. 
         - If previous answers were given, briefly acknowledge them in the "feedback" field but keep it strictly technical.
+        
+        CRITICAL: DO NOT include the interviewer's feedback or acknowledgement in the "question" field. The "question" field must contain ONLY the technical question itself.
+        CRITICAL: The technical question MUST be concise and limited to exactly 1-3 sentences (maximum 3 lines).
+        
         JSON FORMAT ONLY:
         {"question": "str", "isCodeRequired": boolean, "feedback": "feedback on previous answer"}
     `;
@@ -126,6 +130,10 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model) 
         History: ${JSON.stringify(interview.history)}
 
         Task: Generate a UNIQUE challenging technical question for ${topic}.
+        
+        CRITICAL: DO NOT include any feedback, greeting, or acknowledgement in the "question" field. The "question" field must contain ONLY the technical question itself. Place all conversational text in the "feedback" field.
+        CRITICAL: The technical question MUST be concise and limited to exactly 1-3 sentences (maximum 3 lines).
+        
         JSON FORMAT ONLY:
         {"question": "str", "isCodeRequired": boolean, "feedback": "Briefly acknowledge previous answer if session is active."}
     `;

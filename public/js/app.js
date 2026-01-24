@@ -1240,8 +1240,12 @@ const App = {
             </div>
         `;
 
-        // TTS: Read question aloud
-        this.speakText(data.question);
+        // TTS: Read feedback primarily (professional conversation flow)
+        if (data.feedback) {
+            this.speakText(data.feedback);
+        } else {
+            this.speakText(data.question);
+        }
     },
 
 
