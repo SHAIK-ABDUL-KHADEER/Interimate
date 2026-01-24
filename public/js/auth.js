@@ -1,8 +1,11 @@
 const Auth = {
     token: localStorage.getItem('token'),
     empId: localStorage.getItem('empId'), // This remains as the username internally for consistency
+    processing: false,
 
     async login(email, password) {
+        if (this.processing) return;
+        this.processing = true;
         try {
             const response = await fetch('/api/login', {
                 method: 'POST',
@@ -34,10 +37,14 @@ const Auth = {
             console.error('Login error:', error);
             App.notify(error.message, 'error');
             return false;
+        } finally {
+            this.processing = false;
         }
     },
 
     async register(username, email, password, otp) {
+        if (this.processing) return;
+        this.processing = true;
         try {
             const response = await fetch('/api/register', {
                 method: 'POST',
@@ -62,10 +69,14 @@ const Auth = {
             console.error('Registration error:', error);
             App.notify(error.message, 'error');
             return false;
+        } finally {
+            this.processing = false;
         }
     },
 
     async forgotPasswordOTP(email) {
+        if (this.processing) return;
+        this.processing = true;
         try {
             const response = await fetch('/api/forgot-password-otp', {
                 method: 'POST',
@@ -82,10 +93,14 @@ const Auth = {
             console.error('Forgot password error:', error);
             App.notify(error.message, 'error');
             return false;
+        } finally {
+            this.processing = false;
         }
     },
 
     async resetPassword(email, otp, newPassword) {
+        if (this.processing) return;
+        this.processing = true;
         try {
             const response = await fetch('/api/reset-password', {
                 method: 'POST',
@@ -102,6 +117,8 @@ const Auth = {
             console.error('Reset password error:', error);
             App.notify(error.message, 'error');
             return false;
+        } finally {
+            this.processing = false;
         }
     },
 

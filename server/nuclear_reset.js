@@ -10,6 +10,12 @@ async function nuclearReset() {
         process.exit(1);
     }
 
+    if (process.env.NODE_ENV === 'production' && !process.argv.includes('--force')) {
+        console.error(' [!] FORBIDDEN: You are attempting a nuclear reset in a PRODUCTION environment.');
+        console.error(' [!] To proceed, you must append --force to the command.');
+        process.exit(1);
+    }
+
     try {
         console.log('[1/3] Connecting to Sigma Cloud Cluster...');
         await mongoose.connect(process.env.MONGODB_URI);

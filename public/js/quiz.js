@@ -5,6 +5,7 @@ const Quiz = {
     currentIndex: 0,
     container: null,
     loading: false,
+    processing: false,
 
     async init(category, section, container) {
         this.category = category;
@@ -252,14 +253,19 @@ const Quiz = {
     },
 
     async submitMCQ(optionIndex) {
+        if (this.processing) return;
+        this.processing = true;
+
         const q = this.questions[this.section][this.currentIndex];
         const isCorrect = optionIndex === q.answer;
 
         await this.saveProgress('mcq', q.id, isCorrect ? 'correct' : 'incorrect', optionIndex);
+        this.processing = false;
         this.render();
     },
 
     async submitPractice(isConfirmed = false) {
+        if (this.processing) return;
         const q = this.questions[this.section][this.currentIndex];
         const code = document.getElementById('code-editor').value;
         const feedbackEl = document.getElementById('practice-feedback');
@@ -288,6 +294,13 @@ const Quiz = {
             return;
         }
 
+        this.processing = true;
+        const submitBtn = document.querySelector('.btn-primary');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = "ANALYZING...";
+        }
+
         feedbackEl.innerHTML = `<p style="color: var(--accent);">SYSTEM: ANALYZING SUBMISSION...</p>`;
         feedbackEl.classList.remove('hidden');
 
@@ -305,10 +318,16 @@ const Quiz = {
 
             const result = await response.json();
             await this.saveProgress('practice', q.id, result.isCorrect ? 'correct' : 'incorrect', code, result.feedback);
+            this.processing = false;
             this.render();
         } catch (error) {
             console.error('Validation failed:', error);
+            this.processing = false;
             feedbackEl.innerHTML = `<p style="color: var(--danger);">CRITICAL ERROR: AI CORE DISCONNECTED.</p>`;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "RETRY EXECUTION";
+            }
         }
     },
 

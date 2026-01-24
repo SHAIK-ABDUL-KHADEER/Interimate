@@ -28,12 +28,14 @@ const questionSchema = new mongoose.Schema({
     id: { type: Number, required: true },
     data: { type: Object, required: true } // Stores the full question/challenge JSON object
 });
+questionSchema.index({ category: 1, type: 1, id: 1 }, { unique: true });
 
 // Progress Schema
 const progressSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     categories: { type: Object, default: {} } // Stores { java: { mcq: {...}, practice: {...} }, ... }
 });
+progressSchema.index({ username: 1 });
 
 // Interview Schema
 const interviewSchema = new mongoose.Schema({
@@ -48,11 +50,24 @@ const interviewSchema = new mongoose.Schema({
     report: { type: Object, default: null }, // { strengths, improvements, score }
     createdAt: { type: Date, default: Date.now }
 });
+interviewSchema.index({ username: 1, status: 1 });
+
+// Payment Schema (Replay Protection)
+const paymentSchema = new mongoose.Schema({
+    paymentId: { type: String, required: true, unique: true },
+    orderId: { type: String, required: true },
+    username: { type: String, required: true },
+    amount: { type: Number },
+    createdAt: { type: Date, default: Date.now }
+});
+paymentSchema.index({ paymentId: 1 }, { unique: true });
+paymentSchema.index({ username: 1 });
 
 const User = mongoose.model('User', userSchema);
 const Question = mongoose.model('Question', questionSchema);
 const Progress = mongoose.model('Progress', progressSchema);
 const OTP = mongoose.model('OTP', otpSchema);
 const Interview = mongoose.model('Interview', interviewSchema);
+const Payment = mongoose.model('Payment', paymentSchema);
 
-module.exports = { User, Question, Progress, OTP, Interview };
+module.exports = { User, Question, Progress, OTP, Interview, Payment };

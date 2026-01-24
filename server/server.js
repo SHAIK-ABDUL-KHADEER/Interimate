@@ -11,7 +11,8 @@ const { generateQuestion, validateCode } = require('./geminiService');
 const fs = require('fs').promises;
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
-const { User, Question, Progress, OTP, Interview } = require('./models');
+const { User, Question, Progress, OTP, Interview, Payment } = require('./models');
+const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const { getNextInterviewQuestion, generateFinalReport } = require('./interviewService');
 const multer = require('multer');
@@ -23,6 +24,16 @@ const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
     key_secret: process.env.RAZORPAY_KEY_SECRET || 'secret_placeholder'
 });
+
+// AI Prompt Sanitization Utility
+const sanitizeAIInput = (text, maxLength = 5000) => {
+    if (!text || typeof text !== 'string') return "";
+    return text
+        .replace(/<[^>]*>/g, '') // Strip HTML tags
+        .replace(/system:|user:|assistant:|ai:|instruction:|prompt:/gi, '[REDACTED]') // Block common prompt markers
+        .trim()
+        .substring(0, maxLength);
+};
 
 // Configure Multer for resume uploads
 const storage = multer.memoryStorage();
@@ -68,6 +79,24 @@ if (MONGODB_URI) {
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Rate Limiting Protocols
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per window
+    message: { message: "TOO_MANY_REQUESTS: Tactical pause required. Please wait 15 minutes." }
+});
+
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10, // Limit each IP to 10 attempts
+    message: { message: "AUTH_LOCKDOWN: Maximum attempts exceeded. Protocol restricted for 1 hour." }
+});
+
+app.use('/api/', apiLimiter);
+app.use('/api/login', authLimiter);
+app.use('/api/register', authLimiter);
+app.use('/api/admin/login', authLimiter);
 
 // Diagnostic Middleware
 app.use((req, res, next) => {
@@ -318,7 +347,7 @@ app.post('/api/send-otp', async (req, res) => {
     } catch (error) {
         console.error('OTP Send Final Failure:', error);
         res.status(500).json({
-            message: 'Email service is currently overtaxed. PROTOCOL BYPASS: Use code 123456 to register.',
+            message: 'Email service failure. Please contact support if this persists.',
             error: error.message
         });
     }
@@ -330,13 +359,11 @@ app.post('/api/register', async (req, res) => {
     const { username, email, password, otp } = req.body;
 
     try {
-        // Verify OTP (Master fallback: 123456)
-        if (otp !== '123456') {
-            const otpRecord = await OTP.findOne({ email, otp });
-            if (!otpRecord) {
-                console.warn('!!! [REG_OTP_FAIL]', email);
-                return res.status(400).json({ message: 'Invalid or expired OTP' });
-            }
+        // Verify OTP (Strict Enforcement)
+        const otpRecord = await OTP.findOne({ email, otp });
+        if (!otpRecord) {
+            console.warn('!!! [REG_OTP_FAIL]', email);
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
         }
 
         // Check if user exists
@@ -400,14 +427,17 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Admin Login Route
+// Admin Login Route (Ghost Protocol Hardened)
 app.post('/api/admin/login', (req, res) => {
     const { username, password } = req.body;
-    if (username === 'admin' && password === '2457174') {
-        const token = jwt.sign({ empId: 'admin', role: 'admin' }, SECRET_KEY, { expiresIn: '12h' });
+    const ADMIN_U = process.env.ADMIN_USERNAME || 'admin_sigma';
+    const ADMIN_P = process.env.ADMIN_PASSWORD || 'sigma_locked_2025';
+
+    if (username === ADMIN_U && password === ADMIN_P) {
+        const token = jwt.sign({ empId: 'admin', role: 'admin' }, SECRET_KEY, { expiresIn: '24h' });
         return res.json({ token });
     }
-    res.status(401).json({ message: 'Invalid Admin Credentials' });
+    res.status(401).json({ message: 'CREDENTIAL_REJECTED: Unauthorized Access Attempt logged.' });
 });
 
 // Serve Admin Panel (Ghost Protocol)
@@ -452,12 +482,10 @@ app.post('/api/reset-password', async (req, res) => {
     }
 
     try {
-        // Verify OTP (Master fallback: 123456)
-        if (otp !== '123456') {
-            const otpRecord = await OTP.findOne({ email, otp });
-            if (!otpRecord) {
-                return res.status(400).json({ message: 'Invalid or expired OTP' });
-            }
+        // Verify OTP (Strict Enforcement)
+        const otpRecord = await OTP.findOne({ email, otp });
+        if (!otpRecord) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -520,65 +548,50 @@ app.get('/api/questions/:category', authenticateToken, async (req, res) => {
         return res.status(404).json({ message: 'Category not found' });
     }
 
-    console.log(`>>> [ROUTE_HIT] /api/questions/${category}`);
-
     try {
         let genesisBadges = null;
-        const quizFile = `${category}_quiz.json`;
-        const codeFile = `${category}_code.json`;
 
-        let quizData = await readJSON(quizFile);
-        let codeData = await readJSON(codeFile);
+        // Fetch from DB
+        let quizData = await Question.find({ category, type: 'quiz' }).sort({ id: 1 });
+        let codeData = await Question.find({ category, type: 'code' }).sort({ id: 1 });
 
-        console.log(`[API] Loaded from disk: Quiz(${Array.isArray(quizData) ? quizData.length : 0}), Code(${Array.isArray(codeData) ? codeData.length : 0})`);
-
-        // Initialize as arrays if they are empty
-        if (!Array.isArray(quizData)) quizData = [];
-        if (!Array.isArray(codeData)) codeData = [];
+        // Extract raw data from objects for the frontend
+        let mcqs = quizData.map(q => q.data);
+        let practice = codeData.map(q => q.data);
 
         // If completely empty, generate the first ones
-        if (quizData.length === 0) {
-            console.log(`[API] Triggering Gemini for first Quiz: ${category}`);
+        if (mcqs.length === 0) {
+            console.log(`[DB] Triggering Gemini for first Quiz: ${category}`);
             try {
-                const firstQuiz = await generateQuestion(category, 'quiz', 0, quizData);
-                quizData.push(firstQuiz);
-                await writeJSON(quizFile, quizData);
-                console.log(`[API] First Quiz generated and saved successfully.`);
+                const firstQuiz = await generateQuestion(category, 'quiz', 0, []);
+                const saved = await Question.create({ category, type: 'quiz', id: 1, data: firstQuiz });
+                mcqs.push(saved.data);
                 await checkAndGrantBadges(req.user.empId, true);
             } catch (err) {
-                console.error(`[API] Gemini Quiz Generation Error:`, err.message);
+                console.error(`[DB] Gemini Quiz Generation Error:`, err.message);
             }
         }
 
-        if (codeData.length === 0) {
-            console.log(`[API] Triggering Gemini for first Code Challenge: ${category}`);
+        if (practice.length === 0) {
+            console.log(`[DB] Triggering Gemini for first Code Challenge: ${category}`);
             try {
-                const firstCode = await generateQuestion(category, 'code', 0, codeData);
-                codeData.push(firstCode);
-                await writeJSON(codeFile, codeData);
-                console.log(`[API] First Code Challenge generated and saved successfully.`);
-                // Trigger Badge Engine for genesis
+                const firstCode = await generateQuestion(category, 'code', 0, []);
+                const saved = await Question.create({ category, type: 'code', id: 1, data: firstCode });
+                practice.push(saved.data);
                 const b = await checkAndGrantBadges(req.user.empId, true);
                 if (b && b.length > 0) genesisBadges = b;
             } catch (err) {
-                console.error(`[API] Gemini Code Generation Error:`, err.message);
+                console.error(`[DB] Gemini Code Generation Error:`, err.message);
             }
         }
 
-        if (quizData.length === 0 && codeData.length === 0) {
-            console.error(`[FATAL] Empty tracks for ${category}. Check Gemini logs above.`);
-            return res.status(503).json({
-                message: 'AI_CORE_FAILURE_001: SYNTHESIS_REJECTED. The AI engine returned no data. Check terminal for Gemini errors.'
-            });
-        }
-
         res.json({
-            mcq: quizData,
-            practice: codeData,
+            mcq: mcqs,
+            practice: practice,
             newBadges: genesisBadges
         });
     } catch (error) {
-        console.error('[API] Unexpected Error:', error);
+        console.error('[DB] Fetch Error:', error);
         res.status(500).json({ message: 'Internal server error while fetching modules.' });
     }
 });
@@ -587,38 +600,44 @@ app.post('/api/questions/:category/next', authenticateToken, async (req, res) =>
     const { category } = req.params;
     const { type } = req.body; // 'quiz' or 'code'
 
-    if (!['quiz', 'code'].includes(type)) {
-        return res.status(400).json({ message: 'Invalid type' });
+    if (!['quiz', 'code'].includes(type) || !['java', 'selenium', 'sql'].includes(category)) {
+        return res.status(400).json({ message: 'Invalid protocol parameters' });
     }
 
     const limit = QUESTION_LIMITS[type];
-    const fileName = `${category}_${type}.json`;
 
     try {
-        let questions = await readJSON(fileName);
-        if (!Array.isArray(questions)) questions = [];
+        const existingDB = await Question.find({ category, type }).sort({ id: 1 });
+        const existingData = existingDB.map(q => q.data);
 
-        if (questions.length >= limit) {
+        if (existingData.length >= limit) {
             return res.status(400).json({ message: `Limit of ${limit} reached for ${category} ${type}` });
         }
 
-        console.log(`Generating next ${type} for ${category} (Current: ${questions.length})`);
-        const newQuestion = await generateQuestion(category, type, questions.length, questions);
-        questions.push(newQuestion);
-        await writeJSON(fileName, questions);
+        console.log(`Generating next ${type} for ${category} (Current: ${existingData.length})`);
+        const newQuestionJSON = await generateQuestion(category, type === 'quiz' ? 'quiz' : 'code', existingData.length, existingData);
+
+        const saved = await Question.create({
+            category,
+            type,
+            id: existingData.length + 1,
+            data: newQuestionJSON
+        });
 
         // Trigger Badge Engine for genesis
         const newBadges = await checkAndGrantBadges(req.user.empId, true);
 
-        res.json({ ...newQuestion, newBadges: newBadges.length > 0 ? newBadges : null });
+        res.json({ ...saved.data, newBadges: newBadges.length > 0 ? newBadges : null });
     } catch (error) {
-        console.error('Error generating next question:', error);
+        console.error('[DB] Generation Error:', error);
         res.status(500).json({ message: 'Error generating next question' });
     }
 });
 
 app.post('/api/validate', authenticateToken, async (req, res) => {
-    const { category, title, description, userCode } = req.body;
+    let { category, title, description, userCode } = req.body;
+    userCode = sanitizeAIInput(userCode, 10000); // Code can be longer
+
     console.log(`[API] Validating code for: ${title}`);
 
     try {
@@ -656,40 +675,80 @@ app.get('/api/progress', authenticateToken, async (req, res) => {
 
 app.get('/api/leaderboard', authenticateToken, async (req, res) => {
     try {
-        const allProgress = await Progress.find({});
-        const leaderboard = [];
-
-        for (const p of allProgress) {
-            try {
-                let totalCorrect = 0;
-                let totalPractice = 0;
-                const data = p.categories || {};
-
-                ['java', 'selenium', 'sql'].forEach(cat => {
-                    if (data[cat]) {
-                        totalCorrect += Object.values(data[cat].mcq || {}).filter(q => q && q.status === 'correct').length;
-                        totalPractice += Object.values(data[cat].practice || {}).filter(q => q && q.status === 'correct').length;
+        const leaderboard = await Progress.aggregate([
+            {
+                $project: {
+                    username: 1,
+                    categoriesArr: { $objectToArray: "$categories" }
+                }
+            },
+            { $unwind: "$categoriesArr" },
+            {
+                $project: {
+                    username: 1,
+                    mcqArr: { $objectToArray: "$categoriesArr.v.mcq" },
+                    practiceArr: { $objectToArray: "$categoriesArr.v.practice" }
+                }
+            },
+            {
+                $project: {
+                    username: 1,
+                    correctMCQs: {
+                        $filter: {
+                            input: { $ifNull: ["$mcqArr", []] },
+                            as: "item",
+                            cond: { $eq: ["$$item.v.status", "correct"] }
+                        }
+                    },
+                    correctPractice: {
+                        $filter: {
+                            input: { $ifNull: ["$practiceArr", []] },
+                            as: "item",
+                            cond: { $eq: ["$$item.v.status", "correct"] }
+                        }
                     }
-                });
+                }
+            },
+            {
+                $group: {
+                    _id: "$username",
+                    totalCorrect: { $sum: { $size: "$correctMCQs" } },
+                    totalPractice: { $sum: { $size: "$correctPractice" } }
+                }
+            },
+            {
+                $lookup: {
+                    from: "interviews",
+                    let: { name: "$_id" },
+                    pipeline: [
+                        { $match: { $expr: { $and: [{ $eq: ["$username", "$$name"] }, { $eq: ["$status", "completed"] }] } } },
+                        { $count: "count" }
+                    ],
+                    as: "interviewData"
+                }
+            },
+            {
+                $project: {
+                    empId: "$_id",
+                    totalCorrect: 1,
+                    totalPractice: 1,
+                    totalInterviews: { $ifNull: [{ $arrayElemAt: ["$interviewData.count", 0] }, 0] },
+                    score: {
+                        $add: [
+                            "$totalCorrect",
+                            { $multiply: ["$totalPractice", 5] },
+                            { $multiply: [{ $ifNull: [{ $arrayElemAt: ["$interviewData.count", 0] }, 0] }, 10] }
+                        ]
+                    }
+                }
+            },
+            { $sort: { score: -1 } },
+            { $limit: 10 }
+        ]);
 
-                // Count completed interviews
-                const interviewCount = await Interview.countDocuments({ username: p.username, status: 'completed' });
-
-                leaderboard.push({
-                    empId: p.username,
-                    totalCorrect,
-                    totalPractice,
-                    totalInterviews: interviewCount,
-                    score: totalCorrect + (totalPractice * 5) + (interviewCount * 10) // Bonus for participation
-                });
-            } catch (pErr) {
-                console.warn(`[LEADERBOARD] Skipping record for ${p.username}:`, pErr.message);
-            }
-        }
-
-        leaderboard.sort((a, b) => b.score - a.score);
-        res.json(leaderboard.slice(0, 10));
+        res.json(leaderboard);
     } catch (error) {
+        console.error('[LEADERBOARD_AGG] Error:', error);
         res.status(500).json({ message: 'Error fetching leaderboard' });
     }
 });
@@ -767,37 +826,53 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
     const empId = req.user.empId;
 
     try {
-        const user = await User.findOne({ username: empId });
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        // Atomic Check & Deduct using findOneAndUpdate
+        const user = await User.findOneAndUpdate(
+            { username: empId, interviewCredits: { $gt: 0 } },
+            { $inc: { interviewCredits: -1 } },
+            { new: true }
+        );
+
+        if (!user) {
+            // Check if user exists vs just no credits
+            const exists = await User.findOne({ username: empId });
+            if (!exists) return res.status(404).json({ message: 'PROTOCOL_ERROR: User identity not found.' });
+            return res.status(403).json({ message: 'INSUFFICIENT_CREDITS: Please upgrade your plan to continue.' });
+        }
 
         // Guard: Paid plan check for resume/role-resume
         if ((type === 'resume' || type === 'role-resume') && user.plan !== 'paid') {
-            return res.status(403).json({ message: 'Professional evaluations are exclusive to paid users.' });
+            // Refund credit if they shouldn't have been able to trigger this
+            await User.updateOne({ username: empId }, { $inc: { interviewCredits: 1 } });
+            return res.status(403).json({ message: 'UNAUTHORIZED: Professional evaluations require Premium Tier.' });
         }
 
         // Validate Role + Resume requirements
         if (type === 'role-resume' && (!targetRole || targetRole.trim().length < 3)) {
-            return res.status(400).json({ message: 'Target Role is required for this protocol.' });
-        }
-
-        // Guard: Credits check
-        if (user.interviewCredits <= 0) {
-            return res.status(403).json({ message: 'No interview credits remaining. Please upgrade your plan.' });
+            await User.updateOne({ username: empId }, { $inc: { interviewCredits: 1 } });
+            return res.status(400).json({ message: 'VALIDATION_FAILURE: Target Role is required for this protocol.' });
         }
 
         // Guard: Daily limit check
         const today = new Date().setHours(0, 0, 0, 0);
         if (type === 'topic' && user.lastTopicInterview && new Date(user.lastTopicInterview).setHours(0, 0, 0, 0) === today) {
-            return res.status(403).json({ message: 'Daily limit reached: Only 1 Topic Evaluation per day.' });
+            await User.updateOne({ username: empId }, { $inc: { interviewCredits: 1 } });
+            return res.status(403).json({ message: 'LIMIT_EXCEEDED: Daily Topic Evaluation limit reached.' });
         }
         if (type === 'resume' && user.lastResumeInterview && new Date(user.lastResumeInterview).setHours(0, 0, 0, 0) === today) {
-            return res.status(403).json({ message: 'Daily limit reached: Only 1 Resume Evaluation per day.' });
+            await User.updateOne({ username: empId }, { $inc: { interviewCredits: 1 } });
+            return res.status(403).json({ message: 'LIMIT_EXCEEDED: Daily Resume Evaluation limit reached.' });
         }
 
         let resumeText = '';
-        if (type === 'resume' && req.file) {
-            const pdfData = await pdf(req.file.buffer);
-            resumeText = pdfData.text;
+        if ((type === 'resume' || type === 'role-resume') && req.file) {
+            try {
+                const pdfData = await pdf(req.file.buffer);
+                resumeText = pdfData.text;
+            } catch (pErr) {
+                await User.updateOne({ username: empId }, { $inc: { interviewCredits: 1 } });
+                return res.status(400).json({ message: 'PDF_PARSE_ERROR: Failed to analyze resume content.' });
+            }
         }
 
         const interview = new Interview({
@@ -805,16 +880,24 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
             type,
             topics: type === 'topic' ? JSON.parse(topics) : [],
             resumeText,
-            targetRole: type === 'role-resume' ? targetRole : '',
-            interviewerName: interviewerName || 'Agent Sigma',
+            targetRole: type === 'role-resume' ? sanitizeAIInput(targetRole, 100) : '',
+            interviewerName: sanitizeAIInput(interviewerName, 100) || 'Agent Sigma',
             status: 'active'
         });
 
-        const firstQuestion = await getNextInterviewQuestion(interview);
+        // Escalated prompt generation
+        let firstQuestion;
+        try {
+            firstQuestion = await getNextInterviewQuestion(interview);
+        } catch (aiErr) {
+            console.error('[AI_SERVICE_CRASH]', aiErr);
+            await User.updateOne({ username: empId }, { $inc: { interviewCredits: 1 } });
+            return res.status(503).json({ message: 'AI_ORCHESTRATION_FAILURE: The Gemini Engine is currently overloaded.' });
+        }
+
         interview.history.push({ question: firstQuestion.question, answer: null, feedback: firstQuestion.feedback });
 
-        // Update user: deduct credit and set last attempt date
-        user.interviewCredits -= 1;
+        // Update last attempt date
         if (type === 'topic') user.lastTopicInterview = new Date();
         else user.lastResumeInterview = new Date();
 
@@ -827,12 +910,13 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
         });
     } catch (error) {
         console.error('Interview Start Error:', error);
-        res.status(500).json({ message: 'Failed to start interview.' });
+        res.status(500).json({ message: 'Failed to start interview protocol.' });
     }
 });
 
 app.post('/api/interview/next', authenticateToken, async (req, res) => {
-    const { interviewId, answer } = req.body;
+    let { interviewId, answer } = req.body;
+    answer = sanitizeAIInput(answer);
 
     try {
         const interview = await Interview.findById(interviewId);
@@ -886,65 +970,124 @@ app.get('/api/interview/report/:id', authenticateToken, async (req, res) => {
 
 app.get('/api/admin/stats', authenticateAdmin, async (req, res) => {
     try {
-        const [totalUsers, totalInterviews, totalProgress] = await Promise.all([
+        const [userCount, interviewCount, progressStats] = await Promise.all([
             User.countDocuments({}),
             Interview.countDocuments({ status: 'completed' }),
-            Progress.find({})
+            Progress.aggregate([
+                { $project: { categoriesArr: { $objectToArray: "$categories" } } },
+                { $unwind: { path: "$categoriesArr", preserveNullAndEmptyArrays: true } },
+                {
+                    $project: {
+                        mcqArr: { $objectToArray: { $ifNull: ["$categoriesArr.v.mcq", {}] } },
+                        practiceArr: { $objectToArray: { $ifNull: ["$categoriesArr.v.practice", {}] } }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalMCQ: {
+                            $sum: {
+                                $size: {
+                                    $filter: {
+                                        input: { $ifNull: ["$mcqArr", []] },
+                                        as: "q",
+                                        cond: { $eq: ["$$q.v.status", "correct"] }
+                                    }
+                                }
+                            }
+                        },
+                        totalPractice: {
+                            $sum: {
+                                $size: {
+                                    $filter: {
+                                        input: { $ifNull: ["$practiceArr", []] },
+                                        as: "q",
+                                        cond: { $eq: ["$$q.v.status", "correct"] }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ])
         ]);
 
-        let totalMCQ = 0;
-        let totalPractice = 0;
-        totalProgress.forEach(p => {
-            Object.values(p.categories || {}).forEach(cat => {
-                totalMCQ += Object.values(cat.mcq || {}).filter(q => q.status === 'correct').length;
-                totalPractice += Object.values(cat.practice || {}).filter(q => q.status === 'correct').length;
-            });
-        });
+        const stats = progressStats[0] || { totalMCQ: 0, totalPractice: 0 };
 
         res.json({
-            users: totalUsers,
-            interviews: totalInterviews,
-            mcq: totalMCQ,
-            practice: totalPractice
+            users: userCount,
+            interviews: interviewCount,
+            mcq: stats.totalMCQ,
+            practice: stats.totalPractice
         });
     } catch (err) {
+        console.error('[ADMIN_STATS] Error:', err);
         res.status(500).json({ message: 'Error fetching admin stats' });
     }
 });
 
 app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
     try {
-        const users = await User.find({}, '-password').sort({ createdAt: -1 });
-        const progressData = await Progress.find({});
-        const interviewData = await Interview.find({ status: 'completed' });
+        const users = await User.aggregate([
+            { $sort: { createdAt: -1 } },
+            {
+                $lookup: {
+                    from: "progresses",
+                    localField: "username",
+                    foreignField: "username",
+                    as: "progressInfo"
+                }
+            },
+            {
+                $lookup: {
+                    from: "interviews",
+                    let: { name: "$username" },
+                    pipeline: [
+                        { $match: { $expr: { $and: [{ $eq: ["$username", "$$name"] }, { $eq: ["$status", "completed"] }] } } },
+                        { $count: "count" }
+                    ],
+                    as: "interviewData"
+                }
+            },
+            {
+                $project: {
+                    username: 1,
+                    email: 1,
+                    plan: 1,
+                    joined: "$createdAt",
+                    credits: "$interviewCredits",
+                    interviews: { $ifNull: [{ $arrayElemAt: ["$interviewData.count", 0] }, 0] },
+                    progress: { $arrayElemAt: ["$progressInfo.categories", 0] }
+                }
+            }
+        ]);
 
+        // We still need a bit of post-processing if categories aggregation is too complex in a single pipeline
+        // But let's try to do it in the pipeline for true performance
         const detailedUsers = users.map(u => {
-            const p = progressData.find(prog => prog.username === u.username);
-            const userInterviews = interviewData.filter(i => i.username === u.username);
-
             let mcq = 0, practice = 0;
-            if (p) {
-                Object.values(p.categories || {}).forEach(cat => {
+            if (u.progress) {
+                Object.values(u.progress).forEach(cat => {
                     mcq += Object.values(cat.mcq || {}).filter(q => q.status === 'correct').length;
                     practice += Object.values(cat.practice || {}).filter(q => q.status === 'correct').length;
                 });
             }
-
             return {
                 username: u.username,
                 email: u.email,
                 plan: u.plan,
-                credits: u.interviewCredits,
+                credits: u.credits,
                 mcq,
                 practice,
-                interviews: userInterviews.length,
-                score: mcq + (practice * 5) + (userInterviews.length * 10),
-                joined: u.createdAt
+                interviews: u.interviews,
+                score: mcq + (practice * 5) + (u.interviews * 10),
+                joined: u.joined
             };
         });
 
         res.json(detailedUsers);
     } catch (err) {
+        console.error('[ADMIN_USERS] Error:', err);
         res.status(500).json({ message: 'Error fetching user list' });
     }
 });
@@ -1031,18 +1174,36 @@ app.post('/api/payment/verify', authenticateToken, async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     const empId = req.user.empId;
 
+    // Check for replay attack
+    const existingPayment = await Payment.findOne({ paymentId: razorpay_payment_id });
+    if (existingPayment) {
+        return res.status(400).json({ status: "failure", message: "PROTOCOL_VIOLATION: Payment already processed." });
+    }
+
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSign = crypto
-        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || 'secret_placeholder')
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || 'FORCED_FAILURE_IF_MISSING')
         .update(sign.toString())
         .digest("hex");
 
     if (razorpay_signature === expectedSign) {
         try {
-            const user = await User.findOne({ username: empId });
-            user.plan = 'paid';
-            user.interviewCredits += 3; // Add 3 credits
-            await user.save();
+            // Atomic update to prevent race conditions on credits
+            const user = await User.findOneAndUpdate(
+                { username: empId },
+                {
+                    $set: { plan: 'paid' },
+                    $inc: { interviewCredits: 3 }
+                },
+                { new: true }
+            );
+
+            // Log successful payment
+            await Payment.create({
+                paymentId: razorpay_payment_id,
+                orderId: razorpay_order_id,
+                username: empId
+            });
 
             // Send Acknowledgment Email
             try {
@@ -1055,7 +1216,8 @@ app.post('/api/payment/verify', authenticateToken, async (req, res) => {
 
             res.json({ status: "success", message: "Payment verified, 3 credits added!" });
         } catch (err) {
-            res.status(500).json({ message: "Payment verified but failed to update credits" });
+            console.error('[PAYMENT_VERIFY] Error:', err);
+            res.status(500).json({ message: "Payment verified but system failed to update records. Contact support." });
         }
     } else {
         res.status(400).json({ status: "failure", message: "Invalid signature" });
@@ -1067,8 +1229,28 @@ app.get('/api/ping', (req, res) => {
     res.status(200).send('ACK');
 });
 
+// 9. Telemetry & Errors
+app.post('/api/telemetry/error', (req, res) => {
+    const { error, stack, url } = req.body;
+    console.error(`[CLIENT_ERROR] URL: ${url} | ERR: ${error}`);
+    if (stack) console.error(stack);
+    res.status(204).send();
+});
+
+// Centralized Error Handler (Ghost Protocol)
+app.use((err, req, res, next) => {
+    console.error(' [!] CRITICAL_UNHANDLED_EXCEPTION:');
+    console.error(' [!] Route:', req.originalUrl);
+    console.error(' [!] Stack:', err.stack);
+
+    res.status(err.status || 500).json({
+        message: 'SYSTEM_ERROR: The Sigma Engine encountered an internal exception. Operational logs have been updated.',
+        protocol: 'SIGMA_EXCEPTION_HANDLED'
+    });
+});
+
 const serverInstance = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`--- [READY] INTERIMATE SERVER ACTIVE ON PORT ${PORT} ---`);
+    console.log(`### [CORE_ONLINE] SIGMA V3.0 LISTENING ON PORT ${PORT} ###`);
     console.log(`--- [SIG] CORE_VERSION_3.0_SIGMA ---`);
 
     // Survival Heartbeat

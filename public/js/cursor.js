@@ -7,6 +7,8 @@ const Cursor = {
     outlineY: 0,
 
     init() {
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
+
         this.dot = document.querySelector('.cursor-dot');
         this.outline = document.querySelector('.cursor-outline');
 

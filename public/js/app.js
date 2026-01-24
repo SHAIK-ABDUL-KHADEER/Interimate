@@ -4,6 +4,7 @@ const App = {
     currentSection: null, // mcq, practice
     userProgress: {},
     isLoading: false,
+    isProcessing: false,
     isListening: false,
     recognition: null,
 
@@ -157,29 +158,62 @@ const App = {
         }
     },
 
-    showLogoutModal() {
-        const modal = document.createElement('div');
-        modal.id = 'logout-modal';
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <h3 style="color: var(--accent); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.1em;">Confirm Logout</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.9rem;">Are you sure you want to terminate the current session?</p>
-                <div style="display: flex; gap: 1rem; justify-content: center;">
-                    <button class="btn-primary" id="confirm-logout" style="width: auto; padding: 0.8rem 2rem;">LOGOUT</button>
-                    <button class="btn-secondary" id="cancel-logout" style="width: auto; padding: 0.8rem 2rem;">CANCEL</button>
+    showModal(contentHtml, onConfirm = null, onCancel = null) {
+        const container = document.getElementById('modal-container');
+        if (!container) return;
+
+        // Reset container
+        container.innerHTML = '';
+        container.style.display = 'block';
+
+        const modalHtml = `
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    ${contentHtml}
+                    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+                        ${onConfirm ? '<button class="btn-primary" id="modal-confirm" style="width: auto; padding: 0.8rem 2rem;">CONFIRM</button>' : ''}
+                        <button class="btn-secondary" id="modal-cancel" style="width: auto; padding: 0.8rem 2rem;">${onConfirm ? 'CANCEL' : 'CLOSE'}</button>
+                    </div>
                 </div>
             </div>
         `;
-        document.body.appendChild(modal);
+        container.innerHTML = modalHtml;
 
-        document.getElementById('confirm-logout').onclick = () => Auth.logout();
-        document.getElementById('cancel-logout').onclick = () => modal.remove();
+        if (onConfirm) {
+            document.getElementById('modal-confirm').onclick = () => {
+                onConfirm();
+                this.closeModal();
+            };
+        }
+
+        document.getElementById('modal-cancel').onclick = () => {
+            if (onCancel) onCancel();
+            this.closeModal();
+        };
 
         // Close on overlay click
-        modal.onclick = (e) => {
-            if (e.target === modal) modal.remove();
+        const overlay = container.querySelector('.modal-overlay');
+        overlay.onclick = (e) => {
+            if (e.target === overlay) {
+                if (onCancel) onCancel();
+                this.closeModal();
+            }
         };
+    },
+
+    closeModal() {
+        const container = document.getElementById('modal-container');
+        if (container) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+        }
+    },
+
+    showLogoutModal() {
+        this.showModal(`
+            <h3 style="color: var(--accent); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.1em;">Confirm Logout</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Are you sure you want to terminate the current session?</p>
+        `, () => Auth.logout());
     },
 
     async setState(state, params = {}, pushHistory = true) {
@@ -635,6 +669,26 @@ const App = {
             e.preventDefault();
             this.renderLogin(container);
         });
+
+        document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
+            const navLinks = document.querySelector('.nav-links');
+            navLinks.classList.toggle('active');
+        });
+
+        // --- PRODUCTION TELEMETRY: Global Error Boundary ---
+        window.onerror = (message, source, lineno, colno, error) => {
+            fetch('/api/telemetry/error', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    error: message,
+                    stack: error?.stack,
+                    url: window.location.href,
+                    agent: navigator.userAgent
+                })
+            }).catch(() => { /* Silent failure for telemetry to prevent recursion */ });
+            return false; // Let browser handle locally as well
+        };
     },
 
     togglePassword(id) {
@@ -1016,33 +1070,37 @@ const App = {
     },
 
     async startInterview(type) {
-        const name = document.getElementById('interview-name').value;
-        if (!name) return this.notify('Please enter your name', 'error');
+        if (this.isProcessing) return;
+        this.isProcessing = true;
 
-        const formData = new FormData();
-        formData.append('type', type);
-        formData.append('interviewerName', name);
-
-        if (type === 'topic') {
-            const selected = Array.from(document.querySelectorAll('.topic-btn.selected')).map(b => b.dataset.topic);
-            if (selected.length === 0) return this.notify('Please select at least one topic', 'error');
-            formData.append('topics', JSON.stringify(selected));
-        } else if (type === 'resume') {
-            const fileInput = document.getElementById('resume-file');
-            if (!fileInput.files[0]) return this.notify('Please upload your resume', 'error');
-            formData.append('resume', fileInput.files[0]);
-        } else if (type === 'role-resume') {
-            const role = document.getElementById('target-role').value;
-            const fileInput = document.getElementById('role-resume-file');
-            if (!role || role.trim().length < 3) return this.notify('Please specify a target role', 'warning');
-            if (!fileInput.files[0]) return this.notify('Please upload your resume', 'error');
-
-            formData.append('targetRole', role);
-            formData.append('resume', fileInput.files[0]);
-        }
-
-        this.setLoading(true);
         try {
+            const name = document.getElementById('interview-name').value;
+            if (!name) return this.notify('Please enter your name', 'error');
+
+            const formData = new FormData();
+            formData.append('type', type);
+            formData.append('interviewerName', name);
+
+            if (type === 'topic') {
+                const selected = Array.from(document.querySelectorAll('.topic-btn.selected')).map(b => b.dataset.topic);
+                if (selected.length === 0) return this.notify('Please select at least one topic', 'error');
+                formData.append('topics', JSON.stringify(selected));
+            } else if (type === 'resume') {
+                const fileInput = document.getElementById('resume-file');
+                if (!fileInput.files[0]) return this.notify('Please upload your resume', 'error');
+                formData.append('resume', fileInput.files[0]);
+            } else if (type === 'role-resume') {
+                const role = document.getElementById('target-role').value;
+                const fileInput = document.getElementById('role-resume-file');
+                if (!role || role.trim().length < 3) return this.notify('Please specify a target role', 'warning');
+                if (!fileInput.files[0]) return this.notify('Please upload your resume', 'error');
+
+                formData.append('targetRole', role);
+                formData.append('resume', fileInput.files[0]);
+            }
+
+            this.setLoading(true);
+
             // Remove Content-Type header if it exists because FormData needs its own boundary
             const headers = Auth.getAuthHeader();
             delete headers['Content-Type'];
@@ -1069,7 +1127,9 @@ const App = {
         } catch (error) {
             console.error('Start Interview Error:', error);
             this.setLoading(false);
-            this.notify('Failed to start interview system.', 'error');
+            this.notify('Failed to start interview system. ' + error.message, 'error');
+        } finally {
+            this.isProcessing = false;
         }
     },
 
@@ -1090,6 +1150,50 @@ const App = {
             console.error('Resume Error:', error);
             this.setLoading(false);
             this.notify('Failed to resume session.', 'error');
+        }
+    },
+
+    async submitInterviewAnswer() {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        const answer = document.getElementById('interview-answer').value;
+        if (!answer || answer.trim().length < 5) {
+            this.isProcessing = false; // Reset processing state
+            return this.notify('Please provide a more detailed answer', 'warning');
+        }
+
+        const btn = document.getElementById('submit-answer-btn');
+        btn.disabled = true;
+        btn.textContent = 'TRANSMITTING...';
+        this.setLoading(true);
+
+        try {
+            const res = await fetch('/api/interview/next', {
+                method: 'POST',
+                headers: { ...Auth.getAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ interviewId: this.currentInterviewId, answer })
+            });
+
+            if (!res.ok) throw new Error('Failed to submit answer');
+            const data = await res.json();
+
+            if (data.status === 'completed') {
+                this.renderInterviewReport(data.report);
+            } else {
+                this.currentQuestionCount++;
+                this.renderInterviewSession(data.nextQuestion);
+            }
+        } catch (error) {
+            console.error('Submit Answer Error:', error);
+            this.notify('Failed to transmit answer. Please retry.', 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'RETRY TRANSMISSION';
+            }
+        } finally {
+            this.setLoading(false);
+            this.isProcessing = false;
         }
     },
 
@@ -1140,40 +1244,6 @@ const App = {
         this.speakText(data.question);
     },
 
-    async submitInterviewAnswer() {
-        const answer = document.getElementById('interview-answer').value;
-        if (!answer || answer.trim().length < 5) return this.notify('Please provide a more detailed answer', 'warning');
-
-        const btn = document.getElementById('submit-answer-btn');
-        btn.disabled = true;
-        btn.textContent = 'TRANSMITTING...';
-        this.setLoading(true);
-
-        try {
-            const res = await fetch('/api/interview/next', {
-                method: 'POST',
-                headers: { ...Auth.getAuthHeader(), 'Content-Type': 'application/json' },
-                body: JSON.stringify({ interviewId: this.currentInterviewId, answer })
-            });
-
-            if (!res.ok) throw new Error('Failed to submit answer');
-            const data = await res.json();
-
-            if (data.status === 'completed') {
-                this.renderInterviewReport(data.report);
-            } else {
-                this.currentQuestionCount++;
-                this.renderInterviewSession(data.nextQuestion);
-            }
-        } catch (error) {
-            console.error('Submit Answer Error:', error);
-            this.notify('Technical error during transmission.', 'error');
-            btn.disabled = false;
-            btn.textContent = 'SUBMIT RESPONSE';
-        } finally {
-            this.setLoading(false);
-        }
-    },
 
     renderInterviewReport(report) {
         const content = document.getElementById('content');
@@ -1268,10 +1338,12 @@ const App = {
     },
 
     async applyCoupon() {
+        if (this.isProcessing) return;
         const code = document.getElementById('coupon-code').value;
         const msg = document.getElementById('coupon-message');
         const priceDisplay = document.getElementById('plan-price-display');
 
+        this.isProcessing = true;
         try {
             const res = await fetch('/api/coupon/validate', {
                 method: 'POST',
@@ -1313,10 +1385,14 @@ const App = {
             }
         } catch (err) {
             this.notify('Failed to validate coupon', 'error');
+        } finally {
+            this.isProcessing = false;
         }
     },
 
     async handlePayment() {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
         this.setLoading(true);
         try {
             // Fetch public key from server
@@ -1383,6 +1459,7 @@ const App = {
             this.notify(error.message || 'Failed to initialize payment', 'error');
         } finally {
             this.setLoading(false);
+            this.isProcessing = false;
         }
     },
 

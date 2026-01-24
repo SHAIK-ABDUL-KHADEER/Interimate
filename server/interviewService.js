@@ -1,16 +1,13 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const fs = require('fs').promises;
-const path = require('path');
+const { Question } = require('./models');
 
-const CACHE_PATH = path.join(__dirname, 'data', 'questions_cache.json');
+let genAI = null;
 
 const topicContext = {
     'java': 'Core Java logic/syntax. Cover: Loops, arrays, strings, OOP, Collections, Exception handling.',
     'selenium': 'Selenium WebDriver in JAVA ONLY. Cover: Finding elements (ID, XPath, CSS), Actions, Sync strategies, Framework basics.',
     'sql': 'Relational SQL. Cover: DDL, DML, JOINS, Subqueries, Indexes.'
 };
-
-let genAI = null;
 
 async function getNextInterviewQuestion(interview) {
     if (!genAI) genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -19,19 +16,15 @@ async function getNextInterviewQuestion(interview) {
     const qCount = interview.history.length + 1;
     let context = "";
 
-    // Topic Caching Logic
+    // Topic Caching Logic (DB Backed)
     if (interview.type === 'topic') {
         try {
-            const cacheRaw = await fs.readFile(CACHE_PATH, 'utf8');
-            const cache = JSON.parse(cacheRaw);
             const topics = interview.topics;
 
             // 1. Calculate budgets per topic
-            // Topic structure: { name, total, cached, new }
             let budgets = [];
-            if (topics.length === 1) {
-                budgets = [{ name: topics[0], total: 10, cached: 4, new: 6 }];
-            } else if (topics.length === 2) {
+            if (topics.length === 1) budgets = [{ name: topics[0], total: 10, cached: 4, new: 6 }];
+            else if (topics.length === 2) {
                 budgets = [
                     { name: topics[0], total: 5, cached: 2, new: 3 },
                     { name: topics[1], total: 5, cached: 2, new: 3 }
@@ -44,50 +37,51 @@ async function getNextInterviewQuestion(interview) {
                 ];
             }
 
-            // 2. Determine current topic and mode for this qCount
-            let currentTopic = null;
-            let relativeIdx = 0;
-            let cumulativeTotal = 0;
+            // 2. Determine current topic and mode
+            let currentTopic = null, cumulativeTotal = 0, relativeIdx = 0;
             for (const b of budgets) {
                 if (qCount <= cumulativeTotal + b.total) {
                     currentTopic = b;
-                    relativeIdx = qCount - cumulativeTotal; // 1-based index within topic
+                    relativeIdx = qCount - cumulativeTotal;
                     break;
                 }
                 cumulativeTotal += b.total;
             }
 
-            // 3. Mode decision: First 'cached' slots explore cache, rest use Gemini
-            const useCache = relativeIdx <= currentTopic.cached;
-            const topicCache = cache[currentTopic.name] || [];
+            // 3. Mode decision: DB Cache check
+            const topicCache = await Question.find({ category: currentTopic.name, type: 'interview_cache' });
 
-            if (useCache && topicCache.length > 0) {
-                // Pick a random question from cache that hasn't been used in this session context
-                // (Though index-based budgets already minimize repetition within a session)
+            if (relativeIdx <= currentTopic.cached && topicCache.length > 0) {
                 const randomIndex = Math.floor(Math.random() * topicCache.length);
-                const cachedQ = topicCache[randomIndex];
+                const cachedQ = topicCache[randomIndex].data;
                 return {
                     ...cachedQ,
-                    feedback: qCount === 1 ? `I see you're ready for ${currentTopic.name}. Let's begin.` : `Acknowledge your answer. Moving on with ${currentTopic.name}...`
+                    feedback: qCount === 1 ? `Ready for ${currentTopic.name}. Let's begin.` : `Acknowledged. Moving on with ${currentTopic.name}...`
                 };
             }
 
-            // If mode is 'new' OR cache is empty, escalate to Gemini
+            // Escalation to Gemini
             const result = await generateTopicQuestionWithGemini(interview, currentTopic.name, qCount, model);
 
-            // Save new question to cache for future guys
+            // Save to DB Cache for future sessions
             if (result && result.question) {
-                topicCache.push({ question: result.question, isCodeRequired: result.isCodeRequired });
-                // Limit cache size to 50 per topic for health
-                if (topicCache.length > 50) topicCache.shift();
-                cache[currentTopic.name] = topicCache;
-                await fs.writeFile(CACHE_PATH, JSON.stringify(cache, null, 2));
+                await Question.create({
+                    category: currentTopic.name,
+                    type: 'interview_cache',
+                    id: Date.now(), // Use timestamp for unique id in cache
+                    data: { question: result.question, isCodeRequired: result.isCodeRequired }
+                });
+
+                // Trim cache if > 50
+                const count = await Question.countDocuments({ category: currentTopic.name, type: 'interview_cache' });
+                if (count > 50) {
+                    const oldest = await Question.findOne({ category: currentTopic.name, type: 'interview_cache' }).sort({ createdAt: 1 });
+                    if (oldest) await Question.findByIdAndDelete(oldest._id);
+                }
             }
             return result;
-
         } catch (err) {
-            console.error("[InterviewService] Cache/Budget Error:", err.message);
-            // Fallback to legacy behavior if anything fails
+            console.error("[InterviewService] DB Cache Error:", err.message);
         }
     }
 

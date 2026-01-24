@@ -27,12 +27,12 @@ async function migrate() {
             const data = JSON.parse(content);
 
             if (file === 'users.json') {
-                for (const [empId, password] of Object.entries(data)) {
-                    await User.findOneAndUpdate({ empId }, { password }, { upsert: true });
+                for (const [username, password] of Object.entries(data)) {
+                    await User.findOneAndUpdate({ username }, { password }, { upsert: true });
                 }
             } else if (file === 'progress.json') {
-                for (const [empId, categories] of Object.entries(data)) {
-                    await Progress.findOneAndUpdate({ empId }, { categories }, { upsert: true });
+                for (const [username, categories] of Object.entries(data)) {
+                    await Progress.findOneAndUpdate({ username }, { categories }, { upsert: true });
                 }
             } else if (file.includes('_quiz.json') || file.includes('_code.json')) {
                 const parts = file.split('_');
