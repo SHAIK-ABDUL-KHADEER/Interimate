@@ -6,7 +6,8 @@ let genAI = null;
 const topicContext = {
     'java': 'Core Java logic/syntax. Cover: Loops, arrays, strings, OOP, Collections, Exception handling.',
     'selenium': 'Selenium WebDriver in JAVA ONLY. Cover: Finding elements (ID, XPath, CSS), Actions, Sync strategies, Framework basics.',
-    'sql': 'Relational SQL. Cover: DDL, DML, JOINS, Subqueries, Indexes.'
+    'sql': 'Relational SQL. Cover: DDL, DML, JOINS, Subqueries, Indexes.',
+    'functional': 'Functional Testing. Topics: Agile, SDLC, STLC, V-Model, QA/QE/QC, White/Black Box, Static/Dynamic, V&V, GUI, Strategies (Regression, Smoke, Sanity), Defect Lifecycle.'
 };
 
 async function getNextInterviewQuestion(interview) {

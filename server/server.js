@@ -542,7 +542,7 @@ const QUESTION_LIMITS = { quiz: 100, code: 50 };
 
 app.get('/api/questions/:category', authenticateToken, async (req, res) => {
     const { category } = req.params;
-    const allowedCategories = ['java', 'selenium', 'sql'];
+    const allowedCategories = ['java', 'selenium', 'sql', 'functional'];
 
     if (!allowedCategories.includes(category)) {
         return res.status(404).json({ message: 'Category not found' });

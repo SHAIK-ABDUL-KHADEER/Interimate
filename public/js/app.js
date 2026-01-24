@@ -755,12 +755,12 @@ const App = {
         }).join('')}
                 
                 <!-- Future Modules -->
-                <div class="card coming-soon">
-                    <div class="card-icon" style="color: #333;">
+                <div class="card" onclick="App.setState('selection', { category: 'functional' })">
+                    <div class="card-icon" style="color: var(--accent);">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     </div>
-                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #888;">Functional Testing</h3>
-                    <p style="color: #666; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">IN_CALIBRATION</p>
+                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: var(--accent);">Functional Testing</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">PROTOCOL_ACTIVE</p>
                 </div>
 
                 <div class="card coming-soon">
@@ -825,6 +825,7 @@ const App = {
                     <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ 100 QUESTIONS AVAILABLE ]</div>
                 </div>
 
+                ${this.currentCategory !== 'functional' ? `
                 <div class="card selection-card" onclick="App.setState('quiz', { category: '${this.currentCategory}', section: 'practice' })">
                     <div class="card-icon" style="color: var(--accent); margin-bottom: 1.5rem;">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -833,6 +834,16 @@ const App = {
                     <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.9rem;">Real-world coding challenges and practical implementation.</p>
                     <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ 50 QUESTIONS AVAILABLE ]</div>
                 </div>
+                ` : `
+                <div class="card selection-card coming-soon" style="cursor: not-allowed; opacity: 0.5;">
+                    <div class="card-icon" style="color: #333; margin-bottom: 1.5rem;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    </div>
+                    <h3 style="font-size: 1.8rem; font-weight: 800; text-transform: uppercase; color: #888;">CODE LAB</h3>
+                    <p style="color: #666; margin-top: 1rem; font-size: 0.9rem;">Practical coding is not applicable for this theoretical track.</p>
+                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: #666;">[ NOT APPLICABLE ]</div>
+                </div>
+                `}
             </div>
         `;
     },
