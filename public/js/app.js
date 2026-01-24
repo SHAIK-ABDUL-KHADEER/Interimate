@@ -308,6 +308,25 @@ const App = {
         }
     },
 
+    formatAIResponse(str) {
+        if (!str) return '';
+        // 1. Escape HTML
+        let escaped = str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+        // 2. Convert triple backticks
+        escaped = escaped.replace(/```(?:[a-z]*)\n?([\s\S]*?)\n?```/g, '<pre><code>$1</code></pre>');
+
+        // 3. Convert single backticks
+        escaped = escaped.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+        return escaped;
+    },
+
     speakText(text) {
         if (!('speechSynthesis' in window)) return;
 
@@ -1210,12 +1229,12 @@ const App = {
                 ${data.feedback ? `
                     <div class="feedback-box revealed" style="margin-bottom: 2rem; border-left-color: var(--accent);">
                         <span style="font-size: 0.7rem; color: var(--accent); display: block; margin-bottom: 0.5rem; letter-spacing: 0.1em;">INTERVIEWER_FEEDBACK:</span>
-                        ${data.feedback}
+                        ${this.formatAIResponse(data.feedback)}
                     </div>
                 ` : ''}
 
                 <div class="question-text" style="font-size: 1.5rem; margin-bottom: 2rem; line-height: 1.5;">
-                    ${data.question}
+                    ${this.formatAIResponse(data.question)}
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.8rem;">
@@ -1629,7 +1648,7 @@ const App = {
                                         <span style="font-size: 0.6rem; color: var(--accent); font-family: var(--font-mono); text-transform: uppercase;">Question ${i + 1}</span>
                                         ${h.feedback ? `<span style="font-size: 0.6rem; color: var(--text-secondary); font-family: var(--font-mono);">SIGMA_CALIBRATED</span>` : ''}
                                     </div>
-                                    <p style="font-weight: 700; color: #fff; margin-bottom: 1.5rem;">${h.question}</p>
+                                    <p style="font-weight: 700; color: #fff; margin-bottom: 1.5rem;">${this.formatAIResponse(h.question)}</p>
                                     <div style="color: var(--text-secondary); padding: 1rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 2px;">
                                         <div style="font-size: 0.6rem; font-family: var(--font-mono); margin-bottom: 0.5rem; color: #555;">USER_RESPONSE:</div>
                                         <p style="font-size: 0.85rem; font-family: var(--font-mono); color: var(--accent);">${h.answer || '[ SKIPPED / NO_RESPONSE ]'}</p>
@@ -1637,7 +1656,7 @@ const App = {
                                     ${h.feedback ? `
                                         <div style="margin-top: 1.5rem; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
                                             <span style="font-size: 0.6rem; color: #555; text-transform: uppercase; font-family: var(--font-mono); display: block; margin-bottom: 0.5rem;">INTERVIEWER_NOTE:</span>
-                                            ${h.feedback}
+                                            ${this.formatAIResponse(h.feedback)}
                                         </div>
                                     ` : ''}
                                 </div>

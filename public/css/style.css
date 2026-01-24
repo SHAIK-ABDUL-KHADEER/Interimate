@@ -234,6 +234,32 @@ main {
     z-index: 10;
 }
 
+/* Code Formatting */
+code {
+    font-family: var(--font-mono);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--accent);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+pre {
+    background: #050505;
+    border: 1px solid var(--border);
+    padding: 1rem;
+    border-radius: 4px;
+    margin: 1rem 0;
+    overflow-x: auto;
+}
+
+pre code {
+    background: none;
+    padding: 0;
+    display: block;
+    line-height: 1.5;
+}
+
 /* Landing Page Hero */
 .hero {
     display: flex;

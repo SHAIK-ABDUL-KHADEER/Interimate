@@ -7,6 +7,26 @@ const Quiz = {
     loading: false,
     processing: false,
 
+    formatText(str) {
+        if (!str) return '';
+        // 1. Escape HTML entities to prevent injection
+        let escaped = str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+        // 2. Convert triple backticks to pre/code blocks
+        escaped = escaped.replace(/&lt;pre&gt;&lt;code&gt;([\s\S]*?)&lt;\/code&gt;&lt;\/pre&gt;/g, '<pre><code>$1</code></pre>');
+        escaped = escaped.replace(/```(?:[a-z]*)\n?([\s\S]*?)\n?```/g, '<pre><code>$1</code></pre>');
+
+        // 3. Convert single backticks to code tags
+        escaped = escaped.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+        return escaped;
+    },
+
     async init(category, section, container) {
         this.category = category;
         this.section = section || 'mcq';
@@ -190,7 +210,7 @@ const Quiz = {
 
         return `
             <div class="mcq-card">
-                <p class="question-text">${q.question}</p>
+                <p class="question-text">${this.formatText(q.question)}</p>
                 <div class="options-list">
                     ${q.options.map((opt, i) => {
             let cls = '';
@@ -200,7 +220,7 @@ const Quiz = {
             }
             return `
                             <button class="option-btn ${cls}" ${isAnswered ? 'disabled' : ''} onclick="Quiz.submitMCQ(${i})">
-                                <span style="color: var(--accent); margin-right: 1rem; font-weight: 800;">${String.fromCharCode(65 + i)}</span> ${opt}
+                                <span style="color: var(--accent); margin-right: 1rem; font-weight: 800;">${String.fromCharCode(65 + i)}</span> ${this.formatText(opt)}
                             </button>
                         `;
         }).join('')}
@@ -211,7 +231,7 @@ const Quiz = {
                 ${isAnswered ? `
                     <div class="explanation-box" id="mcq-explanation">
                         <h4>Transmission Intelligence</h4>
-                        <p style="font-size: 0.9rem; line-height: 1.6;">${q.explanation}</p>
+                        <p style="font-size: 0.9rem; line-height: 1.6;">${this.formatText(q.explanation)}</p>
                     </div>
                 ` : ''}
             </div>
@@ -231,8 +251,8 @@ const Quiz = {
 
         return `
             <div class="practice-card">
-                <h3 style="color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem;">${q.title}</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.9rem;">${q.description}</p>
+                <h3 style="color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem;">${this.formatText(q.title)}</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.9rem;">${this.formatText(q.description)}</p>
                 <div style="position: relative;">
                     <textarea id="code-editor" class="code-editor" spellcheck="false" ${isAttempted ? 'disabled' : ''}>${userResp ? userResp.response : q.template}</textarea>
                     <div style="position: absolute; top: 1rem; right: 1rem; font-family: var(--font-mono); font-size: 0.6rem; color: #333; pointer-events: none;">NEON-OS // v1.1.0</div>
