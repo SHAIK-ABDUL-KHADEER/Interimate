@@ -230,27 +230,28 @@ const App = {
         if (this.isListening) this.stopMic();
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
+        this.currentState = state;
+        this.currentParams = params;
+        if (state === 'selection' || state === 'quiz') {
+            this.currentCategory = params.category || this.currentCategory;
+            this.currentSection = params.section || null;
+        }
+
         // Sync URL Hash
         if (state === 'static' && params.page) {
-            if (window.location.hash !== `#${params.page} `) {
+            if (window.location.hash !== `#${params.page}`) {
                 window.location.hash = params.page;
             }
         } else if (window.location.hash) {
-            // Strip hash for functional pages to avoid URL/State traps
             history.replaceState(null, '', window.location.pathname + window.location.search);
         }
 
-        // Close mobile menu on state change
         const navLinks = document.querySelector('.nav-links');
         if (navLinks) navLinks.classList.remove('active');
 
-        this.currentState = state;
-        this.currentParams = params;
-
-        // Non-blocking load: If we have cached progress, render immediately
+        // Logic-based rendering
         if (Object.keys(this.userProgress).length > 0) {
             this.render();
-            // Refresh in background for most states
             if (['dashboard', 'leaderboard', 'selection', 'interviews'].includes(state)) {
                 this.loadProgress();
             }
@@ -261,11 +262,6 @@ const App = {
             this.render();
         } else {
             this.render();
-        }
-
-        if (state === 'selection' || state === 'quiz') {
-            this.currentCategory = params.category || this.currentCategory;
-            this.currentSection = params.section || null;
         }
 
         if (pushHistory) {
