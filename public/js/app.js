@@ -1536,6 +1536,7 @@ const App = {
                                     <th>MCQ</th>
                                     <th>Practice</th>
                                     <th>Sessions</th>
+                                    <th>Badges</th>
                                     <th>Total Level</th>
                                 </tr>
                             </thead>
@@ -1547,6 +1548,7 @@ const App = {
                                         <td>${u.totalCorrect}</td>
                                         <td>${u.totalPractice}</td>
                                         <td style="color: var(--text-secondary); opacity: 0.8;">${u.totalInterviews || 0}</td>
+                                        <td style="color: var(--accent); opacity: 0.9;">${u.badgeCount || 0}</td>
                                         <td style="color: var(--accent); font-weight: 900;">${u.score}</td>
                                     </tr>
                                 `).join('')}

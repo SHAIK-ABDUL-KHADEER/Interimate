@@ -129,6 +129,7 @@ const Admin = {
                 <td>${u.mcq}</td>
                 <td>${u.practice}</td>
                 <td>${u.interviews}</td>
+                <td>${u.badgeCount || 0}</td>
                 <td style="color: var(--accent); font-weight: 900;">${u.score}</td>
                 <td style="color: var(--text-secondary); opacity: 0.6;">${new Date(u.joined).toLocaleDateString()}</td>
                 <td><button class="btn-inspect">INSPECT</button></td>

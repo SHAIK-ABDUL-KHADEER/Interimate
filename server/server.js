@@ -728,11 +728,20 @@ app.get('/api/leaderboard', authenticateToken, async (req, res) => {
                 }
             },
             {
+                $lookup: {
+                    from: "users",
+                    localField: "_id",
+                    foreignField: "username",
+                    as: "userInfo"
+                }
+            },
+            {
                 $project: {
                     empId: "$_id",
                     totalCorrect: 1,
                     totalPractice: 1,
                     totalInterviews: { $ifNull: [{ $arrayElemAt: ["$interviewData.count", 0] }, 0] },
+                    badgeCount: { $size: { $ifNull: [{ $arrayElemAt: ["$userInfo.badges", 0] }, []] } },
                     score: {
                         $add: [
                             "$totalCorrect",
@@ -1054,6 +1063,7 @@ app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
                     username: 1,
                     email: 1,
                     plan: 1,
+                    badges: 1,
                     joined: "$createdAt",
                     credits: "$interviewCredits",
                     interviews: { $ifNull: [{ $arrayElemAt: ["$interviewData.count", 0] }, 0] },
@@ -1080,6 +1090,7 @@ app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
                 mcq,
                 practice,
                 interviews: u.interviews,
+                badgeCount: (u.badges || []).length,
                 score: mcq + (practice * 5) + (u.interviews * 10),
                 joined: u.joined
             };
