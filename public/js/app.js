@@ -750,7 +750,9 @@ const App = {
                         <div style="font-size: 0.7rem; color: var(--text-secondary); margin: 0.5rem 0 2rem 0; font-family: var(--font-mono); letter-spacing: 0.1em;">
                             ${cat.id === 'functional' ?
                     `AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/100</span> MCQ · <span style="color: #888;">THEORY_ONLY</span>` :
-                    `AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/100</span> MCQ · <span style="color: #fff;">${practiceCount}/50</span> CODE`
+                    cat.id === 'poi' ?
+                        `AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/25</span> MCQ · <span style="color: #fff;">${practiceCount}/25</span> CODE` :
+                        `AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/100</span> MCQ · <span style="color: #fff;">${practiceCount}/50</span> CODE`
                 }
                         </div>
                         <div class="progress-container">
