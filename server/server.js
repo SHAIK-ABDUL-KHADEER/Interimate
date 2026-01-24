@@ -600,7 +600,7 @@ app.post('/api/questions/:category/next', authenticateToken, async (req, res) =>
     const { category } = req.params;
     const { type } = req.body; // 'quiz' or 'code'
 
-    if (!['quiz', 'code'].includes(type) || !['java', 'selenium', 'sql'].includes(category)) {
+    if (!['quiz', 'code'].includes(type) || !['java', 'selenium', 'sql', 'functional'].includes(category)) {
         return res.status(400).json({ message: 'Invalid protocol parameters' });
     }
 

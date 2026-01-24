@@ -713,6 +713,10 @@ const App = {
             {
                 id: 'sql', name: 'SQL & Databases', icon: `
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+            ` },
+            {
+                id: 'functional', name: 'Functional Testing', icon: `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             ` }
         ];
 
@@ -729,7 +733,8 @@ const App = {
             const prog = this.userProgress[cat.id] || { mcq: {}, practice: {} };
             const mcqCount = Object.keys(prog.mcq || {}).length;
             const practiceCount = Object.keys(prog.practice || {}).length;
-            const totalProgress = Math.round(((mcqCount + practiceCount) / 150) * 100);
+            const denominator = cat.id === 'functional' ? 100 : 150;
+            const totalProgress = Math.round(((mcqCount + practiceCount) / denominator) * 100);
 
             return `
                     <div class="card" onclick="App.setState('selection', { category: '${cat.id}' })">
@@ -739,7 +744,10 @@ const App = {
                         </div>
                         <h3 style="font-size: 1.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: -0.02em; margin-top: 1.5rem;">${cat.name}</h3>
                         <div style="font-size: 0.7rem; color: var(--text-secondary); margin: 0.5rem 0 2rem 0; font-family: var(--font-mono); letter-spacing: 0.1em;">
-                            AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/100</span> MCQ · <span style="color: #fff;">${practiceCount}/50</span> CODE
+                            ${cat.id === 'functional' ?
+                    `AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/100</span> MCQ · <span style="color: #888;">THEORY_ONLY</span>` :
+                    `AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/100</span> MCQ · <span style="color: #fff;">${practiceCount}/50</span> CODE`
+                }
                         </div>
                         <div class="progress-container">
                             <div class="progress-bar-bg">
@@ -755,14 +763,6 @@ const App = {
         }).join('')}
                 
                 <!-- Future Modules -->
-                <div class="card" onclick="App.setState('selection', { category: 'functional' })">
-                    <div class="card-icon" style="color: var(--accent);">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    </div>
-                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: var(--accent);">Functional Testing</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">PROTOCOL_ACTIVE</p>
-                </div>
-
                 <div class="card coming-soon">
                     <div class="card-icon" style="color: #333;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/></svg>
@@ -834,16 +834,7 @@ const App = {
                     <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.9rem;">Real-world coding challenges and practical implementation.</p>
                     <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ 50 QUESTIONS AVAILABLE ]</div>
                 </div>
-                ` : `
-                <div class="card selection-card coming-soon" style="cursor: not-allowed; opacity: 0.5;">
-                    <div class="card-icon" style="color: #333; margin-bottom: 1.5rem;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                    </div>
-                    <h3 style="font-size: 1.8rem; font-weight: 800; text-transform: uppercase; color: #888;">CODE LAB</h3>
-                    <p style="color: #666; margin-top: 1rem; font-size: 0.9rem;">Practical coding is not applicable for this theoretical track.</p>
-                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: #666;">[ NOT APPLICABLE ]</div>
-                </div>
-                `}
+                ` : ''}
             </div>
         `;
     },
