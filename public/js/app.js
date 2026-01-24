@@ -16,7 +16,6 @@ const App = {
             document.head.appendChild(script);
         }
 
-        this.initCursor();
         window.addEventListener('popstate', (e) => this.handlePopState(e));
         window.addEventListener('hashchange', () => this.handleHashChange());
 
@@ -128,65 +127,6 @@ const App = {
         });
     },
 
-    initCursor() {
-        const dot = document.querySelector('.cursor-dot');
-        const outline = document.querySelector('.cursor-outline');
-
-        if (!dot || !outline) return;
-
-        let mouseX = 0;
-        let mouseY = 0;
-        let outlineX = 0;
-        let outlineY = 0;
-
-        window.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-
-            // Use translate3d for better performance + keep centering
-            dot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
-        });
-
-        // Smoother trailing effect
-        const animateOutline = () => {
-            const distX = mouseX - outlineX;
-            const distY = mouseY - outlineY;
-
-            // Faster interpolation for less lag
-            outlineX += distX * 0.25;
-            outlineY += distY * 0.25;
-
-            outline.style.transform = `translate3d(${outlineX}px, ${outlineY}px, 0) translate(-50%, -50%)`;
-
-            requestAnimationFrame(animateOutline);
-        };
-        animateOutline();
-
-        // Hover effect for interactive elements
-        document.addEventListener('mouseover', (e) => {
-            if (e.target.closest('button, a, .card, .landing-card, .logo, input, textarea, [role="button"]')) {
-                dot.classList.add('cursor-hover');
-                outline.classList.add('cursor-hover');
-            }
-        });
-
-        document.addEventListener('mouseout', (e) => {
-            if (e.target.closest('button, a, .card, .landing-card, .logo, input, textarea, [role="button"]')) {
-                dot.classList.remove('cursor-hover');
-                outline.classList.remove('cursor-hover');
-            }
-        });
-
-        document.addEventListener('mousedown', () => {
-            dot.classList.add('cursor-active');
-            outline.classList.add('cursor-active');
-        });
-
-        document.addEventListener('mouseup', () => {
-            dot.classList.remove('cursor-active');
-            outline.classList.remove('cursor-active');
-        });
-    },
 
     attachGlobalListeners() {
         // Logo redirection
