@@ -1510,9 +1510,10 @@ const App = {
                                 <tr>
                                     <th>Rank</th>
                                     <th>Operative ID</th>
-                                    <th>MCQ Score</th>
-                                    <th>Practice Score</th>
-                                    <th>Total Access Level</th>
+                                    <th>MCQ</th>
+                                    <th>Practice</th>
+                                    <th>Sessions</th>
+                                    <th>Total Level</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1522,6 +1523,7 @@ const App = {
                                         <td>${u.empId}</td>
                                         <td>${u.totalCorrect}</td>
                                         <td>${u.totalPractice}</td>
+                                        <td style="color: var(--text-secondary); opacity: 0.8;">${u.totalInterviews || 0}</td>
                                         <td style="color: var(--accent); font-weight: 900;">${u.score}</td>
                                     </tr>
                                 `).join('')}
@@ -1771,7 +1773,10 @@ const App = {
         'CODE_300': { title: 'Code Elite', description: 'Solve 150 Code Challenges', stars: 3, color: '#ffb300' },
         'INT_1': { title: 'Evaluation Initiate', description: 'Complete 1 AI Interview Session', stars: 1, color: '#ffffff' },
         'INT_5': { title: 'Combat Veteran', description: 'Complete 5 AI Interview Sessions', stars: 2, color: '#ff6600' },
+        'INT_10': { title: 'Field Specialist', description: 'Complete 10 AI Interview Sessions', stars: 3, color: '#ffb300' },
         'INT_20': { title: 'Tactical Master', description: 'Complete 20 AI Interview Sessions', stars: 4, color: '#ffcc00' },
+        'ROLE_PIONEER': { title: 'Role Strategist', description: 'Complete your first Role + Resume Interview', stars: 3, color: '#d4ff00' },
+        'PERFECT_10': { title: 'Sigma Ace', description: 'Achieve a perfect 10/10 in any AI Interview', stars: 5, color: '#00ffee' },
         'SCORE_90': { title: 'High Performer', description: 'Achieve a score of 90+ in any evaluation', stars: 3, color: '#00ff00' },
         'SCORE_95': { title: 'Elite Candidate', description: 'Achieve a score of 95+ in any evaluation', stars: 5, color: '#00ffee' }
     },

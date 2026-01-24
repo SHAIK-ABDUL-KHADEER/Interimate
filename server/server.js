@@ -131,7 +131,10 @@ const BADGE_DEFS = {
     'CODE_300': { title: 'Code Elite', description: 'Solve 150 Code Challenges', stars: 3, color: '#ffb300' },
     'INT_1': { title: 'Evaluation Initiate', description: 'Complete 1 AI Interview Session', stars: 1, color: '#ffffff' },
     'INT_5': { title: 'Combat Veteran', description: 'Complete 5 AI Interview Sessions', stars: 2, color: '#ff6600' },
+    'INT_10': { title: 'Field Specialist', description: 'Complete 10 AI Interview Sessions', stars: 3, color: '#ffb300' },
     'INT_20': { title: 'Tactical Master', description: 'Complete 20 AI Interview Sessions', stars: 4, color: '#ffcc00' },
+    'ROLE_PIONEER': { title: 'Role Strategist', description: 'Complete your first Role + Resume Interview', stars: 3, color: '#d4ff00' },
+    'PERFECT_10': { title: 'Sigma Ace', description: 'Achieve a perfect 10/10 in any AI Interview', stars: 5, color: '#00ffee' },
     'SCORE_90': { title: 'High Performer', description: 'Achieve a score of 90+ in any evaluation', stars: 3, color: '#00ff00' },
     'SCORE_95': { title: 'Elite Candidate', description: 'Achieve a score of 95+ in any evaluation', stars: 5, color: '#00ffee' }
 };
@@ -193,16 +196,23 @@ async function checkAndGrantBadges(username, isGenesis = false) {
 
         // 3. Interview Milestones
         const intCount = interviews.length;
-        const intMilestones = [1, 5, 20];
+        const intMilestones = [1, 5, 10, 20];
         intMilestones.forEach(m => {
             const bid = `INT_${m}`;
             if (intCount >= m && !earnedIds.includes(bid)) newBadgesTriggered.push(bid);
         });
 
+        // Role Pioneer Check
+        const roleIntCount = interviews.filter(i => i.type === 'role-resume').length;
+        if (roleIntCount >= 1 && !earnedIds.includes('ROLE_PIONEER')) {
+            newBadgesTriggered.push('ROLE_PIONEER');
+        }
+
         // 4. High Score Checks
         const maxScore = interviews.length > 0 ? Math.max(...interviews.map(i => i.report ? i.report.score : 0)) : 0;
-        if (maxScore >= 95 && !earnedIds.includes('SCORE_95')) newBadgesTriggered.push('SCORE_95');
-        else if (maxScore >= 90 && !earnedIds.includes('SCORE_90')) newBadgesTriggered.push('SCORE_90');
+        if (maxScore >= 10 && !earnedIds.includes('PERFECT_10')) newBadgesTriggered.push('PERFECT_10');
+        else if (maxScore >= 9.5 && !earnedIds.includes('SCORE_95')) newBadgesTriggered.push('SCORE_95');
+        else if (maxScore >= 9 && !earnedIds.includes('SCORE_90')) newBadgesTriggered.push('SCORE_90');
 
         // 3. Save new badges if any
         if (newBadgesTriggered.length > 0) {
@@ -632,11 +642,15 @@ app.get('/api/leaderboard', authenticateToken, async (req, res) => {
                     }
                 });
 
+                // Count completed interviews
+                const interviewCount = await Interview.countDocuments({ username: p.username, status: 'completed' });
+
                 leaderboard.push({
                     empId: p.username,
                     totalCorrect,
                     totalPractice,
-                    score: totalCorrect + (totalPractice * 5)
+                    totalInterviews: interviewCount,
+                    score: totalCorrect + (totalPractice * 5) + (interviewCount * 10) // Bonus for participation
                 });
             } catch (pErr) {
                 console.warn(`[LEADERBOARD] Skipping record for ${p.username}:`, pErr.message);
