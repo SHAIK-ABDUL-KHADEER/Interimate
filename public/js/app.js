@@ -717,6 +717,10 @@ const App = {
             {
                 id: 'functional', name: 'Functional Testing', icon: `
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            ` },
+            {
+                id: 'poi', name: 'Apache POI', icon: `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             ` }
         ];
 
@@ -733,7 +737,7 @@ const App = {
             const prog = this.userProgress[cat.id] || { mcq: {}, practice: {} };
             const mcqCount = Object.keys(prog.mcq || {}).length;
             const practiceCount = Object.keys(prog.practice || {}).length;
-            const denominator = cat.id === 'functional' ? 100 : 150;
+            const denominator = cat.id === 'functional' ? 100 : (cat.id === 'poi' ? 50 : 150);
             const totalProgress = Math.round(((mcqCount + practiceCount) / denominator) * 100);
 
             return `
@@ -822,7 +826,7 @@ const App = {
                     </div>
                     <h3 style="font-size: 1.8rem; font-weight: 800; text-transform: uppercase;">QUIZ MODE</h3>
                     <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.9rem;">Multiple choice questions to test your theoretical foundation.</p>
-                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ 100 QUESTIONS AVAILABLE ]</div>
+                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ ${this.currentCategory === 'poi' ? '25' : '100'} QUESTIONS AVAILABLE ]</div>
                 </div>
 
                 ${this.currentCategory !== 'functional' ? `
@@ -832,7 +836,7 @@ const App = {
                     </div>
                     <h3 style="font-size: 1.8rem; font-weight: 800; text-transform: uppercase;">CODE LAB</h3>
                     <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.9rem;">Real-world coding challenges and practical implementation.</p>
-                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ 50 QUESTIONS AVAILABLE ]</div>
+                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ ${this.currentCategory === 'poi' ? '25' : '50'} QUESTIONS AVAILABLE ]</div>
                 </div>
                 ` : ''}
             </div>
