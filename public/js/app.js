@@ -3,6 +3,10 @@ const App = {
     currentCategory: null,
     currentSection: null, // mcq, practice
     userProgress: {},
+    interviewCache: null,
+    leaderboardCache: null,
+    loadingTimeout: null,
+    isInitialLoad: true,
     isLoading: false,
     isProcessing: false,
     isListening: false,
@@ -49,12 +53,16 @@ const App = {
         }
     },
 
-    setLoading(loading) {
-        this.isLoading = loading;
-        const outline = document.querySelector('.cursor-outline');
-        if (outline) {
-            if (loading) outline.classList.add('loading');
-            else outline.classList.remove('loading');
+    setLoading(isLoading) {
+        if (this.loadingTimeout) clearTimeout(this.loadingTimeout);
+
+        if (isLoading) {
+            // Grace period of 250ms before showing the loader
+            this.loadingTimeout = setTimeout(() => {
+                document.body.classList.add('loading-active');
+            }, 250);
+        } else {
+            document.body.classList.remove('loading-active');
         }
     },
 
@@ -222,7 +230,7 @@ const App = {
 
         // Sync URL Hash
         if (state === 'static' && params.page) {
-            if (window.location.hash !== `#${params.page}`) {
+            if (window.location.hash !== `#${params.page} `) {
                 window.location.hash = params.page;
             }
         } else if (window.location.hash) {
@@ -236,11 +244,23 @@ const App = {
 
         this.currentState = state;
         this.currentParams = params;
-        this.setLoading(true);
-        if (state === 'dashboard' || state === 'leaderboard' || state === 'selection' || state === 'quiz' || state === 'interviews') {
+
+        // Non-blocking load: If we have cached progress, render immediately
+        if (Object.keys(this.userProgress).length > 0) {
+            this.render();
+            // Refresh in background for most states
+            if (['dashboard', 'leaderboard', 'selection', 'interviews'].includes(state)) {
+                this.loadProgress();
+            }
+        } else if (['dashboard', 'leaderboard', 'selection', 'quiz', 'interviews'].includes(state)) {
+            this.setLoading(true);
             await this.loadProgress();
+            this.setLoading(false);
+            this.render();
+        } else {
+            this.render();
         }
-        this.setLoading(false);
+
         if (state === 'selection' || state === 'quiz') {
             this.currentCategory = params.category || this.currentCategory;
             this.currentSection = params.section || null;
@@ -255,7 +275,7 @@ const App = {
             gtag('event', 'page_view', {
                 page_title: state.charAt(0).toUpperCase() + state.slice(1),
                 page_location: window.location.href,
-                page_path: `/${state}`
+                page_path: `/ ${state} `
             });
         }
 
@@ -282,6 +302,11 @@ const App = {
             }
             this.userProgress = await response.json();
             this.updateGlobalCredits();
+
+            // Re-render if we are on a page that depends on progress
+            if (['dashboard', 'selection', 'quiz'].includes(this.currentState)) {
+                this.render();
+            }
         } catch (error) {
             console.error('Failed to load progress:', error);
         }
@@ -805,7 +830,7 @@ const App = {
 
                 <div class="card coming-soon">
                     <div class="card-icon" style="color: #333;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12A10 10 0 1 1 12 2a10 10 0 0 1 10 10Z"/><path d="M22 2 12 12"/><path d="M2 12h10"/><path d="m12 12 5 10"/><path d="m12 12-5 10"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12A10 10 1 1 1 12 2a10 10 0 0 1 10 10Z"/><path d="M22 2 12 12"/><path d="M2 12h10"/><path d="m12 12 5 10"/><path d="m12 12-5 10"/></svg>
                     </div>
                     <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #888;">DevOps Pipeline</h3>
                     <p style="color: #666; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">INFRA_ORCHESTRATION</p>
@@ -856,18 +881,28 @@ const App = {
     },
 
     async renderInterviews(container) {
+        // Use cache if available for instant feel
+        if (this.interviewCache) {
+            this._actualRenderInterviews(container, this.interviewCache);
+        }
+
         this.setLoading(true);
-        let interviews = [];
         try {
             const res = await fetch('/api/interviews/list', {
                 headers: Auth.getAuthHeader()
             });
-            interviews = await res.json();
+            const data = await res.json();
+            this.interviewCache = data;
+            this._actualRenderInterviews(container, data);
         } catch (error) {
-            console.error('Error fetching interviews:', error);
+            console.error('Interview Load Error:', error);
+            this.notify('System synchronizer failed to retrieve history.', 'error');
+        } finally {
+            this.setLoading(false);
         }
-        this.setLoading(false);
+    },
 
+    _actualRenderInterviews(container, interviews) {
         const activeInterviews = interviews.filter(i => i.status === 'active');
         const completedInterviews = interviews.filter(i => i.status === 'completed');
 
@@ -1492,53 +1527,66 @@ const App = {
     },
 
     async renderLeaderboard(container) {
+        if (this.leaderboardCache) {
+            this._actualRenderLeaderboard(container, this.leaderboardCache);
+        }
+
+        this.setLoading(true);
         try {
             const response = await fetch('/api/leaderboard', { headers: Auth.getAuthHeader() });
             if (!response.ok) throw new Error('FAILED_TO_SYNC_RANKINGS');
             const leaders = await response.json();
-
-            container.innerHTML = `
-                <div class="leaderboard-container">
-                    <div class="dashboard-header" style="margin-bottom: 4rem;">
-                        <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">User Rankings</h1>
-                        <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Global Performance Rankings</p>
-                    </div>
-                    <div class="mcq-card">
-                        <table class="leaderboard-table">
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Operative ID</th>
-                                    <th>MCQ</th>
-                                    <th>Practice</th>
-                                    <th>Sessions</th>
-                                    <th>Badges</th>
-                                    <th>Total Level</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${leaders.map((u, i) => `
-                                    <tr>
-                                        <td class="${i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : ''}">#${(i + 1).toString().padStart(2, '0')}</td>
-                                        <td>${u.empId}</td>
-                                        <td>${u.totalCorrect}</td>
-                                        <td>${u.totalPractice}</td>
-                                        <td style="color: var(--text-secondary); opacity: 0.8;">${u.totalInterviews || 0}</td>
-                                        <td style="color: var(--accent); opacity: 0.9;">${u.badgeCount || 0}</td>
-                                        <td style="color: var(--accent); font-weight: 900;">${u.score}</td>
-                                    </tr>
-                                `).join('')}
-                                ${leaders.length === 0 ? '<tr><td colspan="5" style="text-align:center;">NO DATA AVAILABLE</td></tr>' : ''}
-                            </tbody>
-                        </table>
-                    </div>
-                    <button class="btn-primary" style="margin-top: 3rem; width: auto; padding: 1rem 3rem;" onclick="App.setState('dashboard')">RETURN TO DASHBOARD</button>
-                </div>
-            `;
+            this.leaderboardCache = leaders;
+            this._actualRenderLeaderboard(container, leaders);
         } catch (error) {
             console.error('Failed to load leaderboard:', error);
-            container.innerHTML = `<div>SYSTEM ERROR: FAILED TO FETCH RANKINGS</div>`;
+            if (!this.leaderboardCache) {
+                container.innerHTML = `<div style="text-align:center; padding: 4rem; color: var(--danger); font-family: var(--font-mono);">[ ERROR ]: RANKING_DECRYPTION_FAILURE</div>`;
+            }
+        } finally {
+            this.setLoading(false);
         }
+    },
+
+    _actualRenderLeaderboard(container, leaders) {
+        container.innerHTML = `
+            <div class="leaderboard-container">
+                <div class="dashboard-header" style="margin-bottom: 4rem;">
+                    <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">User Rankings</h1>
+                    <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Global Performance Rankings</p>
+                </div>
+                <div class="mcq-card">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Operative ID</th>
+                                <th>MCQ</th>
+                                <th>Practice</th>
+                                <th>Sessions</th>
+                                <th>Badges</th>
+                                <th>Total Level</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${leaders.map((u, i) => `
+                                <tr>
+                                    <td class="${i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : ''}">#${(i + 1).toString().padStart(2, '0')}</td>
+                                    <td>${u.empId}</td>
+                                    <td>${u.totalCorrect}</td>
+                                    <td>${u.totalPractice}</td>
+                                    <td style="color: var(--text-secondary); opacity: 0.8;">${u.totalInterviews || 0}</td>
+                                    <td style="color: var(--accent); opacity: 0.9;">${u.badgeCount || 0}</td>
+                                    <td style="color: var(--accent); font-weight: 900;">${u.score}</td>
+                                </tr>
+                            `).join('')}
+                            ${leaders.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding: 2rem;">NO RANKING DATA SYNCHRONIZED</td></tr>' : ''}
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn-primary" style="margin-top: 3rem; width: auto; padding: 1rem 3rem;" onclick="App.setState('dashboard')">RETURN TO DASHBOARD</button>
+            </div>
+        `;
     },
 
     toggleMic() {

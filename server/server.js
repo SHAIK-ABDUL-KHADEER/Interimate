@@ -671,10 +671,17 @@ app.get('/api/progress', authenticateToken, async (req, res) => {
     }
 });
 
-// --- LEADERBOARD ROUTE ---
+// --- LEADERBOARD ROUTE & CACHING ---
+let leaderboardCache = null;
+let lastLeaderboardUpdate = 0;
+const LEADERBOARD_CACHE_TTL = 5 * 60 * 1000; // 5 Minutes
 
 app.get('/api/leaderboard', authenticateToken, async (req, res) => {
     try {
+        if (leaderboardCache && (Date.now() - lastLeaderboardUpdate < LEADERBOARD_CACHE_TTL)) {
+            return res.json(leaderboardCache);
+        }
+
         const leaderboard = await Progress.aggregate([
             {
                 $project: {
@@ -751,9 +758,12 @@ app.get('/api/leaderboard', authenticateToken, async (req, res) => {
                     }
                 }
             },
-            { $sort: { score: -1 } },
-            { $limit: 10 }
+            { $sort: { score: -1, totalPractice: -1, totalCorrect: -1 } },
+            { $limit: 100 }
         ]);
+
+        leaderboardCache = leaderboard;
+        lastLeaderboardUpdate = Date.now();
 
         res.json(leaderboard);
     } catch (error) {

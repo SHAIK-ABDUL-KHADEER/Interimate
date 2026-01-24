@@ -35,7 +35,7 @@ const progressSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     categories: { type: Object, default: {} } // Stores { java: { mcq: {...}, practice: {...} }, ... }
 });
-progressSchema.index({ username: 1 });
+progressSchema.index({ username: 1 }, { unique: true });
 
 // Interview Schema
 const interviewSchema = new mongoose.Schema({
@@ -51,6 +51,7 @@ const interviewSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 interviewSchema.index({ username: 1, status: 1 });
+interviewSchema.index({ username: 1, createdAt: -1 });
 
 // Payment Schema (Replay Protection)
 const paymentSchema = new mongoose.Schema({
