@@ -4,7 +4,8 @@ const topicContext = {
     'java': 'Core Java logic/syntax. FOR QUESTIONS 1-20: Focus on VERY BASIC logic: Simple loops, basic array handling, string operations (reversing, char count), if-else logic. FOR QUESTIONS 21+: Progress to OOP, Collections, and Exception handling.',
     'selenium': 'Selenium WebDriver in JAVA ONLY. FOR QUESTIONS 1-20: Focus heavily on FINDING ELEMENTS: ID, name, className, and Basic XPath/CSS selectors. Use sites like https://the-internet.herokuapp.com. SNIPPETS ONLY. NO PYTHON.',
     'sql': 'Relational SQL. FOR QUESTIONS 1-20: Strictly BASIC DDL (CREATE, ALTER) and DML (INSERT, UPDATE, DELETE, simple SELECT). NO JOINS OR SUBQUERIES until Question 21+.',
-    'functional': 'Functional & Tactical Testing. AGILE: SDLC, STLC, Project vs Product context, V-Model. ROLES: QA vs QE vs QC. TYPES: White box vs Black box, Static vs Dynamic, Verification vs Validation. SYSTEM: GUI, Functional vs Non-Functional. STRATEGIES: Retesting, Regression, Exploratory, Ad-hoc, Sanity, Smoke, E2E, Accessibility. LIFECYCLE: Use case, Test scenario, Test case. EXECUTION: Environment, Defect reporting, Test closure, Test matrix, Defect life cycle.'
+    'functional': 'Manual testing concepts, Test case design, SDLC/STLC models, Bug life cycle, Regression/Sanity testing. LIFECYCLE: Use case, Test scenario, Test case.',
+    'poi': 'Apache POI for Excel Read/Write. OPERATIONS: Workbook/Sheet/Row/Cell handling, XLSX/XLS difference. POM: Dependency configuration.'
 };
 
 let genAI = null;
