@@ -542,7 +542,7 @@ const QUESTION_LIMITS = { quiz: 100, code: 50 };
 
 app.get('/api/questions/:category', authenticateToken, async (req, res) => {
     const { category } = req.params;
-    const allowedCategories = ['java', 'selenium', 'sql', 'functional', 'poi'];
+    const allowedCategories = ['java', 'selenium', 'sql', 'functional', 'poi', 'testng'];
 
     if (!allowedCategories.includes(category)) {
         return res.status(404).json({ message: 'Category not found' });
@@ -600,11 +600,11 @@ app.post('/api/questions/:category/next', authenticateToken, async (req, res) =>
     const { category } = req.params;
     const { type } = req.body; // 'quiz' or 'code'
 
-    if (!['quiz', 'code'].includes(type) || !['java', 'selenium', 'sql', 'functional', 'poi'].includes(category)) {
+    if (!['quiz', 'code'].includes(type) || !['java', 'selenium', 'sql', 'functional', 'poi', 'testng'].includes(category)) {
         return res.status(400).json({ message: 'Invalid protocol parameters' });
     }
 
-    const limit = category === 'poi' ? 25 : QUESTION_LIMITS[type];
+    const limit = (category === 'poi' || category === 'testng') ? (category === 'poi' ? 25 : 50) : QUESTION_LIMITS[type];
 
     try {
         const existingDB = await Question.find({ category, type }).sort({ id: 1 });

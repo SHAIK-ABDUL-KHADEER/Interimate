@@ -721,6 +721,10 @@ const App = {
             {
                 id: 'poi', name: 'Apache POI', icon: `
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            ` },
+            {
+                id: 'testng', name: 'TestNG Mastery', icon: `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
             ` }
         ];
 
@@ -737,7 +741,7 @@ const App = {
             const prog = this.userProgress[cat.id] || { mcq: {}, practice: {} };
             const mcqCount = Object.keys(prog.mcq || {}).length;
             const practiceCount = Object.keys(prog.practice || {}).length;
-            const denominator = cat.id === 'functional' ? 100 : (cat.id === 'poi' ? 50 : 150);
+            const denominator = cat.id === 'functional' ? 100 : (cat.id === 'poi' ? 50 : (cat.id === 'testng' ? 100 : 150));
             const totalProgress = Math.round(((mcqCount + practiceCount) / denominator) * 100);
 
             return `
@@ -752,7 +756,9 @@ const App = {
                     `AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/100</span> MCQ · <span style="color: #888;">THEORY_ONLY</span>` :
                     cat.id === 'poi' ?
                         `AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/25</span> MCQ · <span style="color: #fff;">${practiceCount}/25</span> CODE` :
-                        `AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/100</span> MCQ · <span style="color: #fff;">${practiceCount}/50</span> CODE`
+                        cat.id === 'testng' ?
+                            `AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/50</span> MCQ · <span style="color: #fff;">${practiceCount}/50</span> CODE` :
+                            `AI SYNTHESIS: <span style="color: #fff;">${mcqCount}/100</span> MCQ · <span style="color: #fff;">${practiceCount}/50</span> CODE`
                 }
                         </div>
                         <div class="progress-container">
@@ -828,7 +834,7 @@ const App = {
                     </div>
                     <h3 style="font-size: 1.8rem; font-weight: 800; text-transform: uppercase;">QUIZ MODE</h3>
                     <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.9rem;">Multiple choice questions to test your theoretical foundation.</p>
-                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ ${this.currentCategory === 'poi' ? '25' : '100'} QUESTIONS AVAILABLE ]</div>
+                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ ${this.currentCategory === 'poi' ? '25' : (this.currentCategory === 'testng' ? '50' : '100')} QUESTIONS AVAILABLE ]</div>
                 </div>
 
                 ${this.currentCategory !== 'functional' ? `
@@ -838,7 +844,7 @@ const App = {
                     </div>
                     <h3 style="font-size: 1.8rem; font-weight: 800; text-transform: uppercase;">CODE LAB</h3>
                     <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.9rem;">Real-world coding challenges and practical implementation.</p>
-                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ ${this.currentCategory === 'poi' ? '25' : '50'} QUESTIONS AVAILABLE ]</div>
+                    <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">[ ${this.currentCategory === 'poi' ? '25' : (this.currentCategory === 'testng' ? '50' : '50')} QUESTIONS AVAILABLE ]</div>
                 </div>
                 ` : ''}
             </div>
