@@ -44,13 +44,15 @@ const Quiz = {
             console.log('STATUS:', response.status);
             console.log('SIGMA_HEADER:', response.headers.get('X-Core-Sigma'));
 
+            if (!response.ok) {
+                const err = await response.json();
+                if (response.status === 401 || response.status === 403) Auth.logout();
+                throw new Error(err.message || 'Failed to sync with AI engine.');
+            }
+
             const data = await response.json();
             if (data.newBadges) App.showBadgeUnlockNotification(data.newBadges);
             console.log('BODY:', data);
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to sync with AI engine.');
-            }
 
             this.questions = data;
         } catch (error) {
@@ -324,6 +326,11 @@ const Quiz = {
                     feedback
                 })
             });
+            if (!response_raw.ok) {
+                const err = await response_raw.json();
+                if (response_raw.status === 401 || response_raw.status === 403) Auth.logout();
+                throw new Error(err.message || 'Progress update rejected');
+            }
             const res = await response_raw.json();
             if (res.newBadges) App.showBadgeUnlockNotification(res.newBadges);
 
@@ -380,6 +387,7 @@ const Quiz = {
 
             if (!response.ok) {
                 const err = await response.json();
+                if (response.status === 401 || response.status === 403) Auth.logout();
                 throw new Error(err.message || 'Failed to generate');
             }
 

@@ -230,10 +230,18 @@ const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) return res.sendStatus(401);
+    if (!token || token === 'null' || token === 'undefined') {
+        return res.status(401).json({ message: 'AUTHENTICATION_REQUIRED: No valid session token detected.' });
+    }
 
     jwt.verify(token, SECRET_KEY, (err, user) => {
-        if (err) return res.sendStatus(403);
+        if (err) {
+            console.error('[AUTH_GUARD] Token Verification Failed:', err.message);
+            return res.status(403).json({
+                message: 'PROTOCOL_FORBIDDEN: Session invalid or expired. Please re-authenticate.',
+                error: err.message
+            });
+        }
         req.user = user;
         next();
     });
@@ -612,23 +620,27 @@ app.get('/api/leaderboard', authenticateToken, async (req, res) => {
         const leaderboard = [];
 
         for (const p of allProgress) {
-            let totalCorrect = 0;
-            let totalPractice = 0;
-            const data = p.categories;
+            try {
+                let totalCorrect = 0;
+                let totalPractice = 0;
+                const data = p.categories || {};
 
-            ['java', 'selenium', 'sql'].forEach(cat => {
-                if (data[cat]) {
-                    totalCorrect += Object.values(data[cat].mcq || {}).filter(q => q.status === 'correct').length;
-                    totalPractice += Object.values(data[cat].practice || {}).filter(q => q.status === 'correct').length;
-                }
-            });
+                ['java', 'selenium', 'sql'].forEach(cat => {
+                    if (data[cat]) {
+                        totalCorrect += Object.values(data[cat].mcq || {}).filter(q => q && q.status === 'correct').length;
+                        totalPractice += Object.values(data[cat].practice || {}).filter(q => q && q.status === 'correct').length;
+                    }
+                });
 
-            leaderboard.push({
-                empId: p.username,
-                totalCorrect,
-                totalPractice,
-                score: totalCorrect + (totalPractice * 5)
-            });
+                leaderboard.push({
+                    empId: p.username,
+                    totalCorrect,
+                    totalPractice,
+                    score: totalCorrect + (totalPractice * 5)
+                });
+            } catch (pErr) {
+                console.warn(`[LEADERBOARD] Skipping record for ${p.username}:`, pErr.message);
+            }
         }
 
         leaderboard.sort((a, b) => b.score - a.score);
@@ -875,6 +887,7 @@ app.post('/api/payment/order', authenticateToken, async (req, res) => {
     // Server-side validation of price
     let finalAmount = 99;
     if (couponCode?.toLowerCase() === 'poornima') finalAmount = 9;
+    if (couponCode?.toLowerCase() === 'cognizant') finalAmount = 1;
 
     const options = {
         amount: finalAmount * 100, // amount in paisa

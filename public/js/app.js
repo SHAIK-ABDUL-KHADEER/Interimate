@@ -300,6 +300,11 @@ const App = {
             const response = await fetch('/api/progress', {
                 headers: Auth.getAuthHeader()
             });
+            if (!response.ok) {
+                const err = await response.json();
+                if (response.status === 401 || response.status === 403) Auth.logout();
+                throw new Error(err.message || 'Progress extraction failed');
+            }
             this.userProgress = await response.json();
             this.updateGlobalCredits();
         } catch (error) {
@@ -1262,6 +1267,11 @@ const App = {
                 headers: { ...Auth.getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code })
             });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.message || 'INVALID_CODE');
+            }
             const data = await res.json();
 
             if (res.ok) {
@@ -1285,7 +1295,7 @@ const App = {
                 this.activeCoupon = code;
                 msg.style.color = 'var(--accent)';
                 msg.textContent = 'COUPON APPLIED SUCCESSFULLY!';
-                this.notify('Coupon applied: Price reduced to ₹9', 'success');
+                this.notify(`Coupon applied: Price reduced to ₹${data.discounted}`, 'success');
             } else {
                 msg.style.color = 'var(--danger)';
                 msg.textContent = 'INVALID CODE';
@@ -1300,6 +1310,7 @@ const App = {
         try {
             // Fetch public key from server
             const keyRes = await fetch('/api/config/razorpay-key');
+            if (!keyRes.ok) throw new Error('CRYPTO_CONFIG_FAILURE');
             const { keyId } = await keyRes.json();
 
             if (!keyId) throw new Error('Razorpay Key not configured on server');
@@ -1309,6 +1320,7 @@ const App = {
                 headers: { ...Auth.getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ couponCode: this.activeCoupon })
             });
+            if (!res.ok) throw new Error('ORDER_SYNTHESIS_REJECTED');
             const order = await res.json();
 
             const options = {
@@ -1412,6 +1424,7 @@ const App = {
     async renderLeaderboard(container) {
         try {
             const response = await fetch('/api/leaderboard', { headers: Auth.getAuthHeader() });
+            if (!response.ok) throw new Error('FAILED_TO_SYNC_RANKINGS');
             const leaders = await response.json();
 
             container.innerHTML = `
@@ -1697,7 +1710,11 @@ const App = {
         let earnedBadges = [];
         try {
             const res = await fetch('/api/user/badges', { headers: Auth.getAuthHeader() });
-            earnedBadges = await res.json();
+            if (res.ok) {
+                earnedBadges = await res.json();
+            } else {
+                console.error('[API_ERROR] Badge retrieval rejected:', res.status);
+            }
         } catch (error) {
             console.error('Error fetching badges:', error);
         }
