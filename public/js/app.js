@@ -774,22 +774,7 @@ const App = {
                     `;
         }).join('')}
                 
-                <!-- Future Modules -->
-                <div class="card coming-soon">
-                    <div class="card-icon" style="color: #333;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/></svg>
-                    </div>
-                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #888;">TestNG Framework</h3>
-                    <p style="color: #666; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">PROTOCOL_PENDING</p>
-                </div>
 
-                <div class="card coming-soon">
-                    <div class="card-icon" style="color: #333;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M10 9H8"/></svg>
-                    </div>
-                    <h3 style="font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 1.5rem; color: #888;">Apache POI</h3>
-                    <p style="color: #666; font-size: 0.7rem; margin-top: 0.5rem; font-family: var(--font-mono);">DATA_STREAM_SYNC</p>
-                </div>
 
                 <div class="card coming-soon">
                     <div class="card-icon" style="color: #333;">
