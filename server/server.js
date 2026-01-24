@@ -938,6 +938,7 @@ app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
                 mcq,
                 practice,
                 interviews: userInterviews.length,
+                score: mcq + (practice * 5) + (userInterviews.length * 10),
                 joined: u.createdAt
             };
         });

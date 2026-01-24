@@ -1,16 +1,47 @@
 const Admin = {
     token: localStorage.getItem('sigma_admin_token'),
     users: [],
+    filteredUsers: [],
     stats: {},
+    perfChart: null,
+    distChart: null,
 
     init() {
         if (this.token) {
             this.showDashboard();
             this.loadStats();
             this.loadUsers();
+            this.setupFilterListeners();
         } else {
             this.showLogin();
         }
+    },
+
+    setupFilterListeners() {
+        const search = document.getElementById('admin-search');
+        const sort = document.getElementById('admin-sort');
+
+        if (search) search.addEventListener('input', () => this.handleSearchSort());
+        if (sort) sort.addEventListener('change', () => this.handleSearchSort());
+    },
+
+    handleSearchSort() {
+        const query = document.getElementById('admin-search').value.toLowerCase();
+        const sortBy = document.getElementById('admin-sort').value;
+
+        // Filter
+        this.filteredUsers = this.users.filter(u =>
+            u.username.toLowerCase().includes(query) ||
+            u.email.toLowerCase().includes(query)
+        );
+
+        // Sort
+        this.filteredUsers.sort((a, b) => {
+            if (sortBy === 'joined') return new Date(b.joined) - new Date(a.joined);
+            return b[sortBy] - a[sortBy];
+        });
+
+        this.renderUserList();
     },
 
     async login() {
@@ -78,7 +109,9 @@ const Admin = {
                 headers: { 'Authorization': `Bearer ${this.token}` }
             });
             this.users = await res.json();
-            this.renderUserList();
+            this.filteredUsers = [...this.users];
+            this.handleSearchSort(); // Apply default sort
+            this.renderCharts(); // Update distribution chart with user data
         } catch (err) {
             console.error('Users Error:', err);
         }
@@ -86,7 +119,7 @@ const Admin = {
 
     renderUserList() {
         const body = document.getElementById('user-list-body');
-        body.innerHTML = this.users.map(u => `
+        body.innerHTML = this.filteredUsers.map(u => `
             <tr onclick="Admin.inspectUser('${u.username}')">
                 <td style="color: var(--accent); font-weight: 700;">${u.username}</td>
                 <td>${u.email}</td>
@@ -96,6 +129,7 @@ const Admin = {
                 <td>${u.mcq}</td>
                 <td>${u.practice}</td>
                 <td>${u.interviews}</td>
+                <td style="color: var(--accent); font-weight: 900;">${u.score}</td>
                 <td style="color: var(--text-secondary); opacity: 0.6;">${new Date(u.joined).toLocaleDateString()}</td>
                 <td><button class="btn-inspect">INSPECT</button></td>
             </tr>
@@ -164,14 +198,17 @@ const Admin = {
         const perfCtx = document.getElementById('performanceChart').getContext('2d');
         const distCtx = document.getElementById('distributionChart').getContext('2d');
 
+        if (this.perfChart) this.perfChart.destroy();
+        if (this.distChart) this.distChart.destroy();
+
         // Performance Chart (Bar)
-        new Chart(perfCtx, {
+        this.perfChart = new Chart(perfCtx, {
             type: 'bar',
             data: {
-                labels: ['Theory (MCQ)', 'Practice (Code)', 'Surgeries (Interviews)'],
+                labels: ['Theory', 'Practice', 'Sessions'],
                 datasets: [{
-                    label: 'Global Activity Metrics',
-                    data: [this.stats.mcq, this.stats.practice, this.stats.interviews],
+                    label: 'Global Activity',
+                    data: [this.stats.mcq || 0, this.stats.practice || 0, this.stats.interviews || 0],
                     backgroundColor: ['#d4ff0033', '#00ffaa33', '#ff336633'],
                     borderColor: ['#d4ff00', '#00ffaa', '#ff3366'],
                     borderWidth: 1
@@ -191,7 +228,7 @@ const Admin = {
         });
 
         // Distribution Chart (Doughnut)
-        new Chart(distCtx, {
+        this.distChart = new Chart(distCtx, {
             type: 'doughnut',
             data: {
                 labels: ['Paid Tier', 'Free Tier'],

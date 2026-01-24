@@ -266,6 +266,19 @@
             </div>
         </div>
 
+        <div class="filter-controls" style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+            <input type="text" id="admin-search" placeholder="SEARCH OPERATIVE ID OR EMAIL..."
+                style="flex: 1; padding: 1rem; background: #111; border: 1px solid var(--admin-border); color: #eee; font-family: var(--font-mono); font-size: 0.8rem;">
+            <select id="admin-sort"
+                style="width: 250px; padding: 1rem; background: #111; border: 1px solid var(--admin-border); color: var(--accent); font-family: var(--font-mono); font-size: 0.8rem;">
+                <option value="joined">SORT: JOINED (NEWEST)</option>
+                <option value="score">SORT: PERFORMANCE SCORE</option>
+                <option value="mcq">SORT: THEORY SOLVED</option>
+                <option value="practice">SORT: PRACTICE SECURES</option>
+                <option value="interviews">SORT: SESSIONS ATTENDED</option>
+            </select>
+        </div>
+
         <h2
             style="font-size: 1.2rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 2rem; border-left: 4px solid var(--accent); padding-left: 1rem;">
             OPERATIVE REGISTRY</h2>
@@ -280,6 +293,7 @@
                         <th>Theory</th>
                         <th>Practice</th>
                         <th>Sessions</th>
+                        <th>Score</th>
                         <th>Joined</th>
                         <th>Action</th>
                     </tr>
