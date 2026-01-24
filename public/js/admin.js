@@ -56,7 +56,10 @@ const Admin = {
                 body: JSON.stringify({ username, password })
             });
 
-            if (!res.ok) throw new Error('Authorization Rejected');
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.message || 'Authorization Rejected');
+            }
 
             const data = await res.json();
             this.token = data.token;
