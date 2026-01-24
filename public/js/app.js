@@ -11,6 +11,7 @@ const App = {
     isProcessing: false,
     isListening: false,
     recognition: null,
+    navigationId: 0,
 
     init() {
         // Load Razorpay Script
@@ -225,6 +226,7 @@ const App = {
     },
 
     async setState(state, params = {}, pushHistory = true) {
+        this.navigationId++;
         if (this.isListening) this.stopMic();
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
@@ -291,6 +293,7 @@ const App = {
 
     async loadProgress() {
         if (!Auth.isAuthenticated()) return;
+        const currentNavId = this.navigationId;
         try {
             const response = await fetch('/api/progress', {
                 headers: Auth.getAuthHeader()
@@ -303,8 +306,8 @@ const App = {
             this.userProgress = await response.json();
             this.updateGlobalCredits();
 
-            // Re-render if we are on a page that depends on progress
-            if (['dashboard', 'selection', 'quiz'].includes(this.currentState)) {
+            // Re-render only if the navigation ID hasn't changed and we are in a progress-dependent state
+            if (currentNavId === this.navigationId && ['dashboard', 'selection', 'quiz'].includes(this.currentState)) {
                 this.render();
             }
         } catch (error) {
@@ -881,6 +884,7 @@ const App = {
     },
 
     async renderInterviews(container) {
+        const currentNavId = this.navigationId;
         // Use cache if available for instant feel
         if (this.interviewCache) {
             this._actualRenderInterviews(container, this.interviewCache);
@@ -892,8 +896,11 @@ const App = {
                 headers: Auth.getAuthHeader()
             });
             const data = await res.json();
-            this.interviewCache = data;
-            this._actualRenderInterviews(container, data);
+
+            if (currentNavId === this.navigationId) {
+                this.interviewCache = data;
+                this._actualRenderInterviews(container, data);
+            }
         } catch (error) {
             console.error('Interview Load Error:', error);
             this.notify('System synchronizer failed to retrieve history.', 'error');
@@ -1527,6 +1534,7 @@ const App = {
     },
 
     async renderLeaderboard(container) {
+        const currentNavId = this.navigationId;
         if (this.leaderboardCache) {
             this._actualRenderLeaderboard(container, this.leaderboardCache);
         }
@@ -1536,8 +1544,11 @@ const App = {
             const response = await fetch('/api/leaderboard', { headers: Auth.getAuthHeader() });
             if (!response.ok) throw new Error('FAILED_TO_SYNC_RANKINGS');
             const leaders = await response.json();
-            this.leaderboardCache = leaders;
-            this._actualRenderLeaderboard(container, leaders);
+
+            if (currentNavId === this.navigationId) {
+                this.leaderboardCache = leaders;
+                this._actualRenderLeaderboard(container, leaders);
+            }
         } catch (error) {
             console.error('Failed to load leaderboard:', error);
             if (!this.leaderboardCache) {
