@@ -1548,7 +1548,7 @@ footer {
     }
 
     main {
-        padding: 1rem;
+        padding: 0.5rem;
     }
 
     nav {
@@ -1599,7 +1599,7 @@ footer {
     }
 
     .hero-title {
-        font-size: 3rem;
+        font-size: 2.5rem;
     }
 
     .cta-group {
@@ -1628,11 +1628,44 @@ footer {
     }
 
     .setup-title {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
     }
 
     .side-nav-btn {
-        display: none !important;
+        position: static;
+        transform: none;
+        width: 45%;
+        height: 50px;
+        font-size: 1.5rem;
+        display: flex !important;
+        opacity: 0.8;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .side-nav-btn.prev {
+        left: auto;
+    }
+
+    .side-nav-btn.next {
+        right: auto;
+    }
+
+    .quiz-layout {
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    /* Wrap buttons at the bottom */
+    .quiz-layout::after {
+        content: none;
+    }
+
+    .quiz-footer-mobile-nav {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        margin-top: 2rem;
+        gap: 1rem;
     }
 
     .mcq-card,
@@ -1644,11 +1677,32 @@ footer {
         font-size: 1.1rem;
     }
 
-    .leaderboard-table th,
-    .leaderboard-table td {
-        padding: 0.75rem 0.5rem;
-        font-size: 0.75rem;
+    .quiz-btn-desktop {
+        display: none !important;
     }
+
+    .mobile-quiz-nav {
+        display: flex !important;
+        justify-content: space-between;
+        width: 100%;
+        margin-top: 2rem;
+        gap: 1rem;
+    }
+
+    .mobile-quiz-nav .side-nav-btn {
+        flex: 1;
+        height: 60px;
+        position: static;
+        transform: none;
+        display: flex !important;
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+    }
+}
+
+.mobile-quiz-nav {
+    display: none;
 }
 
 .mobile-menu-btn {

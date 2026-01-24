@@ -144,7 +144,7 @@ async function checkAndGrantBadges(username, isGenesis = false) {
             Interview.find({ username, status: 'completed' })
         ]);
 
-        if (!user || !progress) return [];
+        if (!user) return [];
 
         console.log(`[BADGE_ENGINE] Checking for ${username} (isGenesis: ${isGenesis})`);
 
@@ -156,37 +156,40 @@ async function checkAndGrantBadges(username, isGenesis = false) {
             newBadgesTriggered.push('GENESIS_CREATOR');
         }
 
-        // 1. Module Completion Checks
-        for (const cat of ['java', 'selenium', 'sql']) {
-            const data = progress.categories[cat] || {};
-            const mcqSolved = Object.values(data.mcq || {}).filter(q => q.status === 'correct').length;
-            const codeSolved = Object.values(data.practice || {}).filter(q => q.status === 'correct').length;
-            const badgeId = `${cat.toUpperCase()}_EXPERT`;
+        // 1. Progress-dependent checks
+        if (progress) {
+            // Module Completion Checks
+            for (const cat of ['java', 'selenium', 'sql']) {
+                const data = progress.categories[cat] || {};
+                const mcqSolved = Object.values(data.mcq || {}).filter(q => q.status === 'correct').length;
+                const codeSolved = Object.values(data.practice || {}).filter(q => q.status === 'correct').length;
+                const badgeId = `${cat.toUpperCase()}_EXPERT`;
 
-            if (mcqSolved >= 100 && codeSolved >= 50 && !earnedIds.includes(badgeId)) {
-                newBadgesTriggered.push(badgeId);
+                if (mcqSolved >= 100 && codeSolved >= 50 && !earnedIds.includes(badgeId)) {
+                    newBadgesTriggered.push(badgeId);
+                }
             }
+
+            // 2. Global Totals Checks
+            let totalMCQ = 0;
+            let totalCode = 0;
+            Object.values(progress.categories).forEach(cat => {
+                totalMCQ += Object.values(cat.mcq || {}).filter(q => q.status === 'correct').length;
+                totalCode += Object.values(cat.practice || {}).filter(q => q.status === 'correct').length;
+            });
+
+            const mcqMilestones = [50, 100, 300];
+            mcqMilestones.forEach(m => {
+                const bid = `QUIZ_${m}`;
+                if (totalMCQ >= m && !earnedIds.includes(bid)) newBadgesTriggered.push(bid);
+            });
+
+            const codeMilestones = [50, 100, 150];
+            codeMilestones.forEach(m => {
+                const bid = `CODE_${m}`;
+                if (totalCode >= m && !earnedIds.includes(bid)) newBadgesTriggered.push(bid);
+            });
         }
-
-        // 2. Global Totals Checks
-        let totalMCQ = 0;
-        let totalCode = 0;
-        Object.values(progress.categories).forEach(cat => {
-            totalMCQ += Object.values(cat.mcq || {}).filter(q => q.status === 'correct').length;
-            totalCode += Object.values(cat.practice || {}).filter(q => q.status === 'correct').length;
-        });
-
-        const mcqMilestones = [50, 100, 300];
-        mcqMilestones.forEach(m => {
-            const bid = `QUIZ_${m}`;
-            if (totalMCQ >= m && !earnedIds.includes(bid)) newBadgesTriggered.push(bid);
-        });
-
-        const codeMilestones = [50, 100, 150];
-        codeMilestones.forEach(m => {
-            const bid = `CODE_${m}`;
-            if (totalCode >= m && !earnedIds.includes(bid)) newBadgesTriggered.push(bid);
-        });
 
         // 3. Interview Milestones
         const intCount = interviews.length;
@@ -315,7 +318,8 @@ app.post('/api/register', async (req, res) => {
             username,
             email,
             password: hashedPassword,
-            isVerified: true
+            isVerified: true,
+            interviewCredits: 1
         });
 
         await newUser.save();
@@ -858,6 +862,9 @@ app.post('/api/coupon/validate', authenticateToken, (req, res) => {
     const { code } = req.body;
     if (code?.toLowerCase() === 'poornima') {
         return res.json({ valid: true, original: 99, discounted: 9 });
+    }
+    if (code?.toLowerCase() === 'cognizant') {
+        return res.json({ valid: true, original: 99, discounted: 1 });
     }
     res.status(400).json({ valid: false, message: 'Invalid coupon code' });
 });

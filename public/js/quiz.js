@@ -132,7 +132,7 @@ const Quiz = {
             </div>
 
             <div class="quiz-layout">
-                <button class="side-nav-btn prev" ${this.currentIndex === 0 ? 'disabled' : ''} onclick="Quiz.prev()" title="Previous Question">
+                <button class="side-nav-btn prev quiz-btn-desktop" ${this.currentIndex === 0 ? 'disabled' : ''} onclick="Quiz.prev()" title="Previous Question">
                     <span class="arrow">&lt;</span>
                 </button>
                 
@@ -140,20 +140,31 @@ const Quiz = {
                     ${this.section === 'mcq' ? this.renderMCQ(q) : this.renderPractice(q)}
                 </div>
 
+                <div class="mobile-quiz-nav">
+                    <button class="side-nav-btn prev" ${this.currentIndex === 0 ? 'disabled' : ''} onclick="Quiz.prev()">
+                        <span class="arrow">&lt;</span>
+                    </button>
+                    ${(() => {
+                const isLast = this.currentIndex === currentQuestions.length - 1;
+                const limit = this.section === 'mcq' ? 100 : 50;
+                const canGenerate = currentQuestions.length < limit;
+                if (isLast && canGenerate) {
+                    return `<button class="side-nav-btn next generate-mode" onclick="Quiz.next()"><span class="arrow">＋</span></button>`;
+                } else {
+                    return `<button class="side-nav-btn next" ${isLast ? 'disabled' : ''} onclick="Quiz.next()"><span class="arrow">&gt;</span></button>`;
+                }
+            })()}
+                </div>
+
                 ${(() => {
                 const isLast = this.currentIndex === currentQuestions.length - 1;
                 const limit = this.section === 'mcq' ? 100 : 50;
                 const canGenerate = currentQuestions.length < limit;
-
-                return `
-                    <button class="side-nav-btn next ${isLast && canGenerate ? 'generate-mode' : ''}" 
-                            ${isLast && !canGenerate ? 'disabled' : ''} 
-                            onclick="Quiz.next()" 
-                            id="next-btn"
-                            title="${isLast && canGenerate ? 'Generate Next Question' : 'Next Question'}">
-                        <span class="arrow" id="next-arrow">${isLast && canGenerate ? '＋' : '&gt;'}</span>
-                    </button>
-                    `;
+                if (isLast && canGenerate) {
+                    return `<button class="side-nav-btn next quiz-btn-desktop generate-mode" onclick="Quiz.next()" title="Generate Next Question"><span class="arrow">＋</span></button>`;
+                } else {
+                    return `<button class="side-nav-btn next quiz-btn-desktop" ${isLast && !canGenerate ? 'disabled' : ''} onclick="Quiz.next()" title="Next Question"><span class="arrow">&gt;</span></button>`;
+                }
             })()}
             </div>
 
