@@ -226,7 +226,14 @@ async function generateFinalReport(interview) {
     try {
         const result = await model.generateContent(prompt);
         let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");
-        return JSON.parse(text);
+        const report = JSON.parse(text);
+
+        // Add RAG Status Logic
+        if (report.score >= 8) report.rag = 'Green';
+        else if (report.score >= 5) report.rag = 'Amber';
+        else report.rag = 'Red';
+
+        return report;
     } catch (error) {
         console.error("[InterviewService] Report Error:", error.message);
         throw error;

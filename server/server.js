@@ -972,6 +972,9 @@ app.post('/api/interview/next', authenticateToken, async (req, res) => {
             interview.status = 'completed';
             const report = await generateFinalReport(interview);
             interview.report = report;
+
+            // Ensure Mongoose detects history updates for transcript view
+            interview.markModified('history');
             await interview.save();
 
             // Trigger Badge Engine
@@ -986,6 +989,9 @@ app.post('/api/interview/next', authenticateToken, async (req, res) => {
 
         const nextQuestion = await getNextInterviewQuestion(interview);
         interview.history.push({ question: nextQuestion.question, answer: null, feedback: nextQuestion.feedback });
+
+        // Ensure Mongoose detects the nested history update
+        interview.markModified('history');
         await interview.save();
 
         res.json({ status: 'active', nextQuestion });

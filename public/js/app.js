@@ -1781,18 +1781,38 @@ const App = {
             content.innerHTML = `
                 <div class="report-container" style="max-width: 900px; margin: 0 auto; padding-bottom: 5rem;">
                     <div class="dashboard-header" style="margin-bottom: 3rem;">
-                        <h1 style="font-size: 3rem; font-weight: 950; color: var(--accent); text-transform: uppercase; letter-spacing: -0.05em;">Evaluation Report</h1>
-                        <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem; margin-top: 1rem;">Protocol: ${interview.type.toUpperCase()} // SIGMA_SCORE: <span style="color: #fff; font-weight: 800;">${report.score}/10</span></p>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                            <h1 style="font-size: 3rem; font-weight: 950; color: var(--accent); text-transform: uppercase; letter-spacing: -0.05em;">Evaluation Report</h1>
+                            <div class="rag-badge" style="
+                                padding: 0.5rem 1.5rem; 
+                                border-radius: 2px; 
+                                font-family: var(--font-mono); 
+                                font-weight: 900; 
+                                font-size: 0.8rem; 
+                                letter-spacing: 0.2em;
+                                background: ${report.rag === 'Green' ? 'rgba(0, 255, 102, 0.1)' : report.rag === 'Amber' ? 'rgba(255, 170, 0, 0.1)' : 'rgba(255, 0, 51, 0.1)'};
+                                color: ${report.rag === 'Green' ? '#00ff66' : report.rag === 'Amber' ? '#ffaa00' : '#ff0033'};
+                                border: 1px solid ${report.rag === 'Green' ? '#00ff66' : report.rag === 'Amber' ? '#ffaa00' : '#ff0033'};
+                                box-shadow: 0 0 15px ${report.rag === 'Green' ? 'rgba(0, 255, 102, 0.2)' : report.rag === 'Amber' ? 'rgba(255, 170, 0, 0.2)' : 'rgba(255, 0, 51, 0.2)'};
+                            ">
+                                STATUS: ${report.rag || 'UNKNOWN'}
+                            </div>
+                        </div>
+                        <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem; margin-top: 1rem;">Protocol: ${interview.type.toUpperCase()} // SIGMA_SCORE: <span style="color: #fff; font-weight: 800;">${report.score || 0}/10</span></p>
                     </div>
 
                     <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-bottom: 4rem;">
                         <div class="mcq-card" style="border-left: 4px solid var(--success); flex: 1;">
                             <h4 style="color: var(--success); font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 1.5rem; text-transform: uppercase;">Key Strengths</h4>
-                            <p style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">${report.strengths}</p>
+                            <div style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">
+                                ${Array.isArray(report.strengths) ? `<ul style="padding-left: 1.2rem; margin: 0;">${report.strengths.map(s => `<li>${s}</li>`).join('')}</ul>` : report.strengths}
+                            </div>
                         </div>
-                        <div class="mcq-card" style="border-left: 4px solid var(--accent); flex: 1;">
-                            <h4 style="color: var(--accent); font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 1.5rem; text-transform: uppercase;">Primary Improvements</h4>
-                            <p style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">${report.improvements}</p>
+                        <div class="mcq-card" style="border-left: 4px solid #ffaa00; flex: 1;">
+                            <h4 style="color: #ffaa00; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 1.5rem; text-transform: uppercase;">Primary Improvements</h4>
+                            <div style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">
+                                ${Array.isArray(report.improvements) ? `<ul style="padding-left: 1.2rem; margin: 0;">${report.improvements.map(i => `<li>${i}</li>`).join('')}</ul>` : report.improvements}
+                            </div>
                         </div>
                     </div>
 
