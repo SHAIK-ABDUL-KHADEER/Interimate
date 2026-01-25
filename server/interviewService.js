@@ -78,12 +78,18 @@ async function getNextInterviewQuestion(interview) {
                 budgets.push({ name: topics[i], total: t, cached: c, new: t - c });
             }
 
-            // --- V2 PROTOCOL: QUESTION #1 is ALWAYS SELF-INTRODUCTION ---
+            // --- UNIVERSAL PROTOCOL: QUESTION #1 is ALWAYS SELF-INTRODUCTION ---
             if (qCount === 1) {
+                const greetingName = interview.interviewerName || interview.username || 'Operative';
+                let technicalContext = "";
+                if (interview.type === 'topic') technicalContext = `your experience with ${interview.topics.join(', ')}`;
+                else if (interview.type === 'role-resume') technicalContext = `your profile relative to the ${interview.targetRole} position`;
+                else technicalContext = `your technical background and resume`;
+
                 return {
-                    question: `Hello ${interview.username}, I am ${interview.interviewerName}. To begin our technical evaluation session, could you please provide a brief self-introduction including your experience with ${topics.join(', ')}?`,
+                    question: `Hi ${greetingName}, welcome to the interview! To begin our session, could you please introduce yourself and provide a brief overview of ${technicalContext}?`,
                     isCodeRequired: false,
-                    feedback: "Initializing Technical Evaluation Protocol..."
+                    feedback: "Initializing Mission Protocol: Establishing Candidate Baseline..."
                 };
             }
 

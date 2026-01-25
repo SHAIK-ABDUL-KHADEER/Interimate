@@ -900,12 +900,13 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
         }
 
         const topicsArray = type === 'topic' ? JSON.parse(topics) : [];
-        let totalQuestions = 15; // Floor for 1-3 topics
+        let totalQuestions = 10; // Default for non-topic based
         if (type === 'topic') {
             const n = topicsArray.length;
+            totalQuestions = 15; // Floor for 1-3 topics
             if (n === 4) totalQuestions = 20;
             else if (n === 5) totalQuestions = 25;
-            else if (n >= 6) totalQuestions = 30; // Cap at 30
+            else if (n >= 6) totalQuestions = 30;
         }
 
         const interview = new Interview({
@@ -938,7 +939,9 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
         await Promise.all([interview.save(), user.save()]);
 
         res.json({
+            status: 'active',
             interviewId: interview._id,
+            totalQuestions: interview.totalQuestions,
             nextQuestion: firstQuestion,
             remainingCredits: user.interviewCredits
         });
@@ -961,7 +964,11 @@ app.post('/api/interview/next', authenticateToken, async (req, res) => {
         const lastEntry = interview.history[interview.history.length - 1];
         lastEntry.answer = answer;
 
-        if (interview.history.length >= interview.totalQuestions + 1) {
+        // TERMINATION CHECK: If history size equals totalQuestions, we are done.
+        // History starts with 1 q (pushed at start). 
+        // Then user answers (lastEntry.answer = answer).
+        // Then we check if we should end or ask another.
+        if (interview.history.length >= interview.totalQuestions) {
             interview.status = 'completed';
             const report = await generateFinalReport(interview);
             interview.report = report;
@@ -1166,6 +1173,7 @@ app.get('/api/interview/resume/:id', authenticateToken, async (req, res) => {
         res.json({
             interviewId: interview._id,
             questionCount: interview.history.length,
+            totalQuestions: interview.totalQuestions,
             nextQuestion: {
                 question: lastQuestion.question,
                 feedback: lastQuestion.feedback,

@@ -1269,6 +1269,7 @@ const App = {
             const data = await res.json();
             this.currentInterviewId = data.interviewId;
             this.currentQuestionCount = 1;
+            this.currentTotalQuestions = data.totalQuestions || 10;
 
             // Sync credits immediately
             if (data.remainingCredits !== undefined) {
@@ -1298,6 +1299,7 @@ const App = {
 
             this.currentInterviewId = data.interviewId;
             this.currentQuestionCount = data.questionCount;
+            this.currentTotalQuestions = data.totalQuestions || 10;
             this.setLoading(false);
             this.renderInterviewSession(data.nextQuestion);
         } catch (error) {
@@ -1359,7 +1361,7 @@ const App = {
             <div class="setup-container" style="max-width: 1000px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                     <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); letter-spacing: 0.2em;">PROTOCOL // SESSION_ACTIVE</div>
-                    <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">${this.currentQuestionCount} / 10</div>
+                    <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">${this.currentQuestionCount} / ${this.currentTotalQuestions || 10}</div>
                 </div>
 
                 ${data.feedback ? `
