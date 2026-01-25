@@ -51,6 +51,21 @@ async function getNextInterviewQuestion(interview) {
     const qCount = interview.history.length + 1;
     let context = "";
 
+    // --- UNIVERSAL PROTOCOL: QUESTION #1 is ALWAYS SELF-INTRODUCTION ---
+    if (qCount === 1) {
+        const greetingName = interview.interviewerName || interview.username || 'Operative';
+        let technicalContext = "";
+        if (interview.type === 'topic') technicalContext = `your experience with ${interview.topics.join(', ')}`;
+        else if (interview.type === 'role-resume') technicalContext = `your profile relative to the ${interview.targetRole} position`;
+        else technicalContext = `your technical background and resume`;
+
+        return {
+            question: `Hi ${greetingName}, welcome to the interview! To begin our session, could you please introduce yourself and provide a brief overview of ${technicalContext}?`,
+            isCodeRequired: false,
+            feedback: "Initializing Mission Protocol: Establishing Candidate Baseline..."
+        };
+    }
+
     // Topic Caching Logic (DB Backed)
     if (interview.type === 'topic') {
         try {
@@ -78,21 +93,6 @@ async function getNextInterviewQuestion(interview) {
                 budgets.push({ name: topics[i], total: t, cached: c, new: t - c });
             }
 
-            // --- UNIVERSAL PROTOCOL: QUESTION #1 is ALWAYS SELF-INTRODUCTION ---
-            if (qCount === 1) {
-                const greetingName = interview.interviewerName || interview.username || 'Operative';
-                let technicalContext = "";
-                if (interview.type === 'topic') technicalContext = `your experience with ${interview.topics.join(', ')}`;
-                else if (interview.type === 'role-resume') technicalContext = `your profile relative to the ${interview.targetRole} position`;
-                else technicalContext = `your technical background and resume`;
-
-                return {
-                    question: `Hi ${greetingName}, welcome to the interview! To begin our session, could you please introduce yourself and provide a brief overview of ${technicalContext}?`,
-                    isCodeRequired: false,
-                    feedback: "Initializing Mission Protocol: Establishing Candidate Baseline..."
-                };
-            }
-
             // Adjust qCount for technical question index (tech questions start at qCount 2)
             const techQCount = qCount - 1;
             if (techQCount > totalTechQuestions) return null; // Should be handled by server, but safety first.
@@ -108,35 +108,47 @@ async function getNextInterviewQuestion(interview) {
                 cumulativeTotal += b.total;
             }
 
-            // 3. Mode decision: DB Cache check
+            // 3. Mode decision: DB Cache check (with duplicate prevention)
             const topicCache = await Question.find({ category: currentTopic.name, type: 'interview_cache' });
+            const usedQuestions = interview.history.map(h => h.question);
 
-            if (relativeIdx <= currentTopic.cached && topicCache.length > 0) {
-                const randomIndex = Math.floor(Math.random() * topicCache.length);
-                const cachedQ = topicCache[randomIndex].data;
+            // Filter out already used questions from cache
+            const availableCache = topicCache.filter(q => !usedQuestions.includes(q.data.question));
+
+            if (relativeIdx <= currentTopic.cached && availableCache.length > 0) {
+                const randomIndex = Math.floor(Math.random() * availableCache.length);
+                const cachedQ = availableCache[randomIndex].data;
                 return {
                     ...cachedQ,
-                    feedback: qCount === 1 ? `Ready for ${currentTopic.name}. Let's begin.` : `Acknowledged. Moving on with ${currentTopic.name}...`
+                    feedback: `Acknowledged. Moving on with ${currentTopic.name}...`
                 };
             }
 
             // Escalation to Gemini
             const result = await generateTopicQuestionWithGemini(interview, currentTopic.name, qCount, model);
 
-            // Save to DB Cache for future sessions
+            // Save to DB Cache for future sessions (with duplicate prevention)
             if (result && result.question) {
-                await Question.create({
+                const exists = await Question.findOne({
                     category: currentTopic.name,
                     type: 'interview_cache',
-                    id: Date.now(), // Use timestamp for unique id in cache
-                    data: { question: result.question, isCodeRequired: result.isCodeRequired }
+                    'data.question': result.question
                 });
 
-                // Trim cache if > 50
-                const count = await Question.countDocuments({ category: currentTopic.name, type: 'interview_cache' });
-                if (count > 50) {
-                    const oldest = await Question.findOne({ category: currentTopic.name, type: 'interview_cache' }).sort({ createdAt: 1 });
-                    if (oldest) await Question.findByIdAndDelete(oldest._id);
+                if (!exists) {
+                    await Question.create({
+                        category: currentTopic.name,
+                        type: 'interview_cache',
+                        id: Date.now(), // Use timestamp for unique id in cache
+                        data: { question: result.question, isCodeRequired: result.isCodeRequired }
+                    });
+
+                    // Trim cache if > 50
+                    const count = await Question.countDocuments({ category: currentTopic.name, type: 'interview_cache' });
+                    if (count > 50) {
+                        const oldest = await Question.findOne({ category: currentTopic.name, type: 'interview_cache' }).sort({ createdAt: 1 });
+                        if (oldest) await Question.findByIdAndDelete(oldest._id);
+                    }
                 }
             }
             return result;
@@ -157,16 +169,15 @@ async function getNextInterviewQuestion(interview) {
         context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} on topics: ${interview.topics.join(', ')}.`;
     }
 
+    const usedQuestions = interview.history.map(h => h.question);
     const prompt = `
         ${context}
-        Current Session Status: Question #${qCount} out of 10.
-        History of Q&A: ${JSON.stringify(interview.history)}
-
-        Task: Ask the NEXT relevant technical question. 
-        - If previous answers were given, briefly acknowledge them in the "feedback" field but keep it strictly technical.
+        Current Session Status: Question #${qCount} out of ${interview.totalQuestions}.
+        History of Questions Already Asked: ${JSON.stringify(usedQuestions)}
         
-        CRITICAL: DO NOT include the interviewer's feedback or acknowledgement in the "question" field. The "question" field must contain ONLY the technical question itself.
-        CRITICAL: The technical question MUST be concise and limited to exactly 1-3 sentences (maximum 3 lines).
+        CRITICAL TASK: Ask the NEXT relevant technical question. 
+        - PROHIBITED QUESTIONS: You MUST NOT repeat any of the following already asked questions: ${JSON.stringify(usedQuestions)}.
+        - acknowledge previous answer briefly in "feedback" field.
         
         JSON FORMAT ONLY:
         {"question": "str", "isCodeRequired": boolean, "feedback": "feedback on previous answer"}
@@ -185,21 +196,21 @@ async function getNextInterviewQuestion(interview) {
 async function generateTopicQuestionWithGemini(interview, topic, qCount, model) {
     const blueprint = checkpointBlueprint[topic] || [];
     const checkpoint = blueprint.find(c => qCount >= c.range[0] && qCount <= c.range[1]) || { subtopic: topic, difficulty: 'Intermediate' };
+    const usedQuestions = interview.history.map(h => h.question);
 
     const prompt = `
         System: You are a high-precision Technical Interviewer. 
         Focus Area: ${topic}.
         Sub-topic Target: ${checkpoint.subtopic}.
-        Session Context: Question #${qCount} of ${interview.totalQuestions + 1}.
-        History: ${JSON.stringify(interview.history)}
+        Session Context: Question #${qCount} of ${interview.totalQuestions}.
+        Already Asked Questions: ${JSON.stringify(usedQuestions)}
 
-        Task: Generate a UNIQUE challenging technical question for ${topic} focusing on ${checkpoint.subtopic}.
+        Task: Generate a UNIQUE challenging technical question.
         
         CRITICAL RULES:
-        1. BREVITY: All conversational text and the question itself MUST be concise. Total limit: 3 LINES.
-        2. ANTI-DUPLICATION: Do NOT repeat any concepts or wording seen in the History.
+        1. NO REPEATS: Do NOT repeat the wording or core concept of these questions: ${JSON.stringify(usedQuestions)}.
+        2. BREVITY: MAX 3 LINES.
         3. CODING: If appropriate for ${checkpoint.subtopic}, ask for a code snippet or SQL query.
-        4. MANDATORY CODE: Current status: ${interview.history.some(h => h.isCodeRequired) ? 'Code already asked' : 'CODE CHALLENGE REQUIRED SOON'}.
         
         JSON FORMAT ONLY:
         {"question": "str (MAX 3 LINES)", "isCodeRequired": boolean, "feedback": "Brief acknowledgment (MAX 3 LINES)."}

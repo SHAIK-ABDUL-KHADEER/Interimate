@@ -973,8 +973,9 @@ app.post('/api/interview/next', authenticateToken, async (req, res) => {
             const report = await generateFinalReport(interview);
             interview.report = report;
 
-            // Ensure Mongoose detects history updates for transcript view
+            // Ensure Mongoose detects updates to the history array and report object
             interview.markModified('history');
+            interview.markModified('report');
             await interview.save();
 
             // Trigger Badge Engine
