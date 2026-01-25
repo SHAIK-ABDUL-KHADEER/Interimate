@@ -1354,6 +1354,7 @@ const App = {
     },
 
     renderInterviewSession(data) {
+        this.stopMic(); // Reset mic state for new question
         const content = document.getElementById('content');
         const isCode = data.isCodeRequired;
 
@@ -1710,6 +1711,9 @@ const App = {
             this.recognition.lang = 'en-US';
 
             this.recognition.onresult = (event) => {
+                const currentTextarea = document.getElementById('interview-answer');
+                if (!currentTextarea) return;
+
                 let finalTranscript = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
@@ -1717,7 +1721,7 @@ const App = {
                     }
                 }
                 if (finalTranscript) {
-                    textarea.value += (textarea.value ? ' ' : '') + finalTranscript;
+                    currentTextarea.value += (currentTextarea.value ? ' ' : '') + finalTranscript;
                 }
             };
 
@@ -1728,7 +1732,8 @@ const App = {
 
             this.recognition.onend = () => {
                 this.isListening = false;
-                if (micBtn) micBtn.classList.remove('mic-listening');
+                const currentMicBtn = document.getElementById('mic-btn');
+                if (currentMicBtn) currentMicBtn.classList.remove('mic-listening');
             };
         }
 
