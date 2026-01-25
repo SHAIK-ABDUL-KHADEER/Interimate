@@ -32,36 +32,63 @@ const App = {
         }
 
         window.addEventListener('popstate', (e) => this.handlePopState(e));
-        window.addEventListener('hashchange', () => this.handleHashChange());
 
-        // Initial route check
-        if (Auth.isAuthenticated()) {
-            if (window.location.hash) {
-                this.handleHashChange();
+        // Intercept clicks for Clean URLs
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (link && !link.hasAttribute('download') && link.hostname === window.location.hostname) {
+                const path = link.getAttribute('href');
+                const staticPaths = {
+                    '/contact-us': 'contact',
+                    '/terms-conditions': 'terms',
+                    '/cancellations-refunds': 'refunds',
+                    '/privacy-policy': 'privacy'
+                };
+                if (staticPaths[path]) {
+                    e.preventDefault();
+                    this.setState('static', { page: staticPaths[path] });
+                }
+            }
+        });
+
+        // Resolve Initial Route from Pathname
+        const pathname = window.location.pathname;
+        const staticPathsReverse = {
+            '/contact-us': 'contact',
+            '/terms-conditions': 'terms',
+            '/cancellations-refunds': 'refunds',
+            '/privacy-policy': 'privacy'
+        };
+
+        const pathMapReverse = {
+            '/dashboard': 'dashboard',
+            '/interviews': 'interviews',
+            '/pricing': 'pricing',
+            '/feedback': 'feedback',
+            '/leaderboard': 'leaderboard',
+            '/badges': 'badges',
+            '/selection': 'selection',
+            '/quiz': 'quiz'
+        };
+
+        if (staticPathsReverse[pathname]) {
+            this.setState('static', { page: staticPathsReverse[pathname] }, false);
+        } else if (Auth.isAuthenticated()) {
+            const stateFromPath = pathMapReverse[pathname];
+            if (stateFromPath) {
+                this.setState(stateFromPath, {}, false);
             } else {
                 this.setState('dashboard', {}, false);
             }
         } else {
-            if (window.location.hash) {
-                this.handleHashChange();
-            } else {
-                this.render();
-                history.replaceState({ state: this.currentState, params: {} }, '');
-            }
+            this.render();
+            history.replaceState({ state: 'landing', params: {} }, '', '/');
         }
 
         this.attachGlobalListeners();
     },
 
-    handleHashChange() {
-        const hash = window.location.hash.substring(1);
-        const validStaticPages = ['contact', 'terms', 'refunds', 'privacy'];
-        if (validStaticPages.includes(hash)) {
-            this.setState('static', { page: hash }, false);
-        } else if (hash === 'dashboard' && Auth.isAuthenticated()) {
-            this.setState('dashboard', {}, false);
-        }
-    },
+
 
     setLoading(isLoading) {
         if (this.loadingTimeout) clearTimeout(this.loadingTimeout);
@@ -246,13 +273,36 @@ const App = {
             this.currentSection = params.section || null;
         }
 
-        // Sync URL Hash
+        // Clean URL State Mapping
+        const pathMap = {
+            'dashboard': '/dashboard',
+            'interviews': '/interviews',
+            'pricing': '/pricing',
+            'feedback': '/feedback',
+            'leaderboard': '/leaderboard',
+            'badges': '/badges',
+            'selection': '/selection',
+            'quiz': '/quiz'
+        };
+
+        const staticPaths = {
+            'contact': '/contact-us',
+            'terms': '/terms-conditions',
+            'refunds': '/cancellations-refunds',
+            'privacy': '/privacy-policy'
+        };
+
+        let newUrl = '/';
         if (state === 'static' && params.page) {
-            if (window.location.hash !== `#${params.page}`) {
-                window.location.hash = params.page;
-            }
-        } else if (window.location.hash) {
-            history.replaceState(null, '', window.location.pathname + window.location.search);
+            newUrl = staticPaths[params.page] || '/';
+        } else if (pathMap[state]) {
+            newUrl = pathMap[state];
+        }
+
+        if (pushHistory) {
+            history.pushState({ state, params }, '', newUrl);
+        } else {
+            history.replaceState({ state, params }, '', newUrl);
         }
 
         const navLinks = document.querySelector('.nav-links');

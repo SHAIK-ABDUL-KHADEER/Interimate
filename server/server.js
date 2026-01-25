@@ -1268,6 +1268,14 @@ app.post('/api/telemetry/error', (req, res) => {
     res.status(204).send();
 });
 
+// Centralized SPA Routing for Clean URLs
+app.get([
+    '/contact-us', '/terms-conditions', '/cancellations-refunds', '/privacy-policy',
+    '/dashboard', '/interviews', '/pricing', '/feedback', '/leaderboard', '/badges', '/selection', '/quiz'
+], (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
 // Centralized Error Handler (Ghost Protocol)
 app.use((err, req, res, next) => {
     console.error(' [!] CRITICAL_UNHANDLED_EXCEPTION:');
