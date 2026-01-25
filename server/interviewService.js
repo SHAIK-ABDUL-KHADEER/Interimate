@@ -25,19 +25,25 @@ async function getNextInterviewQuestion(interview) {
             const topics = interview.topics;
 
             // 1. Calculate budgets per topic
+            const n = topics.length;
             let budgets = [];
-            if (topics.length === 1) budgets = [{ name: topics[0], total: 10, cached: 4, new: 6 }];
-            else if (topics.length === 2) {
-                budgets = [
-                    { name: topics[0], total: 5, cached: 2, new: 3 },
-                    { name: topics[1], total: 5, cached: 2, new: 3 }
-                ];
-            } else if (topics.length === 3) {
-                budgets = [
-                    { name: topics[0], total: 3, cached: 1, new: 2 },
-                    { name: topics[1], total: 3, cached: 1, new: 2 },
-                    { name: topics[2], total: 4, cached: 1, new: 3 }
-                ];
+            if (n <= 3) {
+                const totalQ = 10;
+                const basePerTopic = Math.floor(totalQ / n);
+                let remaining = totalQ % n;
+                for (let i = 0; i < n; i++) {
+                    let t = basePerTopic + (remaining > 0 ? 1 : 0);
+                    remaining--;
+                    // Rule: From every 3 questions, 1 should be cached (recall mode)
+                    let c = Math.floor(t / 3);
+                    if (c === 0 && t > 0) c = 1; // At least one recall question per topic
+                    budgets.push({ name: topics[i], total: t, cached: c, new: t - c });
+                }
+            } else {
+                // Scaling: If > 3 topics, we ask 3 questions per topic (3N total)
+                for (let i = 0; i < n; i++) {
+                    budgets.push({ name: topics[i], total: 3, cached: 1, new: 2 });
+                }
             }
 
             // 2. Determine current topic and mode

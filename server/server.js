@@ -894,13 +894,20 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
             }
         }
 
+        const topicsArray = type === 'topic' ? JSON.parse(topics) : [];
+        let totalQuestions = 10;
+        if (type === 'topic' && topicsArray.length > 3) {
+            totalQuestions = topicsArray.length * 3;
+        }
+
         const interview = new Interview({
             username: empId,
             type,
-            topics: type === 'topic' ? JSON.parse(topics) : [],
+            topics: topicsArray,
             resumeText,
             targetRole: type === 'role-resume' ? sanitizeAIInput(targetRole, 100) : '',
             interviewerName: sanitizeAIInput(interviewerName, 100) || 'Agent Sigma',
+            totalQuestions,
             status: 'active'
         });
 
@@ -946,7 +953,7 @@ app.post('/api/interview/next', authenticateToken, async (req, res) => {
         const lastEntry = interview.history[interview.history.length - 1];
         lastEntry.answer = answer;
 
-        if (interview.history.length >= 10) {
+        if (interview.history.length >= interview.totalQuestions) {
             interview.status = 'completed';
             const report = await generateFinalReport(interview);
             interview.report = report;

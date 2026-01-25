@@ -1088,7 +1088,7 @@ const App = {
 
     renderTopicInterviewSetup() {
         const content = document.getElementById('content');
-        const topics = ['java', 'selenium', 'sql'];
+        const topics = ['java', 'selenium', 'sql', 'functional', 'poi', 'testng'];
         let selectedTopics = [];
 
         content.innerHTML = `

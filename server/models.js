@@ -47,6 +47,7 @@ const interviewSchema = new mongoose.Schema({
     interviewerName: { type: String, default: 'Agent Sigma' },
     history: { type: [Object], default: [] }, // [{ question, answer, feedback }]
     status: { type: String, default: 'active' }, // active, completed
+    totalQuestions: { type: Number, default: 10 },
     report: { type: Object, default: null }, // { strengths, improvements, score }
     createdAt: { type: Date, default: Date.now }
 });
