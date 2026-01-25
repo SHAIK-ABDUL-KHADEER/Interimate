@@ -674,7 +674,7 @@ app.get('/api/progress', authenticateToken, async (req, res) => {
 // --- LEADERBOARD ROUTE & CACHING ---
 let leaderboardCache = null;
 let lastLeaderboardUpdate = 0;
-const LEADERBOARD_CACHE_TTL = 5 * 60 * 1000; // 5 Minutes
+const LEADERBOARD_CACHE_TTL = 10 * 1000; // 10 Seconds for near real-time sync
 
 app.get('/api/leaderboard', authenticateToken, async (req, res) => {
     try {

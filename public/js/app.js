@@ -12,6 +12,15 @@ const App = {
     isListening: false,
     recognition: null,
     navigationId: 0,
+    leaderboardCache: null,
+    interviewCache: null,
+
+    invalidateLeaderboardCache() {
+        this.leaderboardCache = null;
+    },
+    invalidateInterviewCache() {
+        this.interviewCache = null;
+    },
 
     init() {
         // Load Razorpay Script
@@ -890,9 +899,9 @@ const App = {
         // Use cache if available for instant feel
         if (this.interviewCache) {
             this._actualRenderInterviews(container, this.interviewCache);
+        } else {
+            this.setLoading(true);
         }
-
-        this.setLoading(true);
         try {
             const res = await fetch('/api/interviews/list', {
                 headers: Auth.getAuthHeader()
@@ -1539,9 +1548,9 @@ const App = {
         const currentNavId = this.navigationId;
         if (this.leaderboardCache) {
             this._actualRenderLeaderboard(container, this.leaderboardCache);
+        } else {
+            this.setLoading(true);
         }
-
-        this.setLoading(true);
         try {
             const response = await fetch('/api/leaderboard', { headers: Auth.getAuthHeader() });
             if (!response.ok) throw new Error('FAILED_TO_SYNC_RANKINGS');
@@ -1565,7 +1574,10 @@ const App = {
         container.innerHTML = `
             <div class="leaderboard-container">
                 <div class="dashboard-header" style="margin-bottom: 4rem;">
-                    <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">User Rankings</h1>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                        <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">User Rankings</h1>
+                        <div id="leaderboard-sync-time" style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); opacity: 0.6; margin-bottom: 1rem;">LAST_SYNC: ${new Date().toLocaleTimeString()}</div>
+                    </div>
                     <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">Global Performance Rankings</p>
                 </div>
                 <div class="mcq-card">
@@ -1672,6 +1684,8 @@ const App = {
     },
 
     async renderInterviewReport(id) {
+        this.invalidateInterviewCache();
+        this.invalidateLeaderboardCache();
         this.setLoading(true);
         try {
             const res = await fetch(`/api/interview/report/${id}`, {

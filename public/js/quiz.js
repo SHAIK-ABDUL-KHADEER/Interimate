@@ -373,6 +373,9 @@ const Quiz = {
             const res = await response_raw.json();
             if (res.newBadges) App.showBadgeUnlockNotification(res.newBadges);
 
+            // Invalidate leaderboard cache since progress has changed
+            App.invalidateLeaderboardCache();
+
             if (!App.userProgress[this.category]) App.userProgress[this.category] = { mcq: {}, practice: {} };
             App.userProgress[this.category][section][questionId] = { status, response, feedback };
         } catch (error) {
