@@ -176,16 +176,19 @@ async function getNextInterviewQuestion(interview) {
     const prompt = `
         ${context}
         Current Session Status: Question #${qCount} out of ${interview.totalQuestions}.
-        History of Questions Already Asked: ${JSON.stringify(usedQuestions)}
+        Full Transcript Context: ${JSON.stringify(interview.history)}
         Current Code Question Count: ${codeCount}/3.
         
         CRITICAL TASK: Ask the NEXT relevant technical question. 
-        - PROHIBITED QUESTIONS: You MUST NOT repeat any of the following already asked questions: ${JSON.stringify(usedQuestions)}.
-        - QUESTION TYPE: ${canAskCode ? 'Prefer theoretical, but you can ask for code if highly relevant (limit 3 total).' : 'MANDATORY: Ask a THEORETICAL question only. No code writing allowed now.'}
-        - acknowledge previous answer briefly in "feedback" field.
+        - PROHIBITED QUESTIONS: You MUST NOT repeat any of the following: ${JSON.stringify(usedQuestions)}.
+        - QUESTION TYPE: ${canAskCode ? 'Prefer theoretical, but you can ask for code if highly relevant (limit 3 total).' : 'MANDATORY: Ask a THEORETICAL question only.'}
+        - LENGTH CONSTRAINTS: 
+            1. "question": EXACTLY 1-3 LINES. DO NOT EXCEED 3 LINES.
+            2. "feedback": EXACTLY 1-2 LINES acknowledging the previous answer. DO NOT EXCEED 2 LINES.
+        - TONE & CRITIQUE: Be professional and critical. If the user's previous answer was irrelevant, shallow, or incorrect, acknowledge it firmly (e.g., "That response doesn't address the technical core of the question...") instead of being overly nice. 
         
         JSON FORMAT ONLY:
-        {"question": "str", "isCodeRequired": boolean, "feedback": "feedback on previous answer"}
+        {"question": "str", "isCodeRequired": boolean, "feedback": "Brief, critical feedback (max 2 lines)"}
     `;
 
     try {
@@ -211,17 +214,18 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model) 
         Sub-topic Target: ${checkpoint.subtopic}.
         Session Context: Question #${qCount} of ${interview.totalQuestions}.
         Current Code Question Count: ${codeCount}/3.
-        Already Asked Questions: ${JSON.stringify(usedQuestions)}
+        Full Transcript Context: ${JSON.stringify(interview.history)}
 
         Task: Generate a UNIQUE challenging technical question.
         
         CRITICAL RULES:
-        1. NO REPEATS: Do NOT repeat the wording or core concept of these questions: ${JSON.stringify(usedQuestions)}.
+        1. NO REPEATS: Do NOT repeat the core concept of: ${JSON.stringify(usedQuestions)}.
         2. QUESTION TYPE: ${canAskCode ? 'Focus on depth. Coding challenges allowed (max 3 total).' : 'MANDATORY: Ask a THEORETICAL/ARCHITECTURAL question only.'}
-        3. BREVITY: MAX 3 LINES.
+        3. LENGTH: "question" (max 3 lines), "feedback" (max 2 lines).
+        4. CRITIQUE: If the user provided irrelevant text previously, provide a firm, professional correction in the "feedback" field.
         
         JSON FORMAT ONLY:
-        {"question": "str (MAX 3 LINES)", "isCodeRequired": boolean, "feedback": "Brief acknowledgment (MAX 3 LINES)."}
+        {"question": "str (MAX 3 LINES)", "isCodeRequired": boolean, "feedback": "Brief, critical acknowledgment (MAX 2 LINES)."}
     `;
     const result = await model.generateContent(prompt);
     let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");
@@ -245,6 +249,7 @@ async function generateFinalReport(interview) {
 
         Task: Provide a high-fidelity assessment.
         - SCORING: Be highly critical. Only a perfect, industry-ready candidate gets a 9 or 10.
+        - IRRELEVANT CONTENT: If the candidate provided irrelevant, non-technical, or "placeholder" answers (like "asdf" or "I don't know"), penalize their score HEAVILY and note it in the improvements.
         - RAG STATUS:
             - Green: Ready for immediate deployment (Score 8-10)
             - Amber: High potential, needs specific training (Score 5-7)
