@@ -37,6 +37,14 @@ const progressSchema = new mongoose.Schema({
 });
 progressSchema.index({ username: 1 }, { unique: true });
 
+// Interview History Sub-Schema for strict persistence
+const historyEntrySchema = new mongoose.Schema({
+    question: { type: String, required: true },
+    answer: { type: String, default: null },
+    feedback: { type: String, default: null },
+    isCodeRequired: { type: Boolean, default: false }
+}, { _id: false });
+
 // Interview Schema
 const interviewSchema = new mongoose.Schema({
     username: { type: String, required: true },
@@ -45,10 +53,10 @@ const interviewSchema = new mongoose.Schema({
     resumeText: { type: String, default: '' },
     targetRole: { type: String, default: '' },
     interviewerName: { type: String, default: 'Agent Sigma' },
-    history: { type: [Object], default: [] }, // [{ question, answer, feedback }]
+    history: [historyEntrySchema],
     status: { type: String, default: 'active' }, // active, completed
     totalQuestions: { type: Number, default: 10 },
-    report: { type: Object, default: null }, // { strengths, improvements, score }
+    report: { type: Object, default: null }, // { strengths, improvements, score, rag, summary }
     createdAt: { type: Date, default: Date.now }
 });
 interviewSchema.index({ username: 1, status: 1 });

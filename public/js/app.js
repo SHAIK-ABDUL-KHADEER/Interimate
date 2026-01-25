@@ -1803,13 +1803,17 @@ const App = {
                         <div class="mcq-card" style="border-left: 4px solid var(--success); flex: 1;">
                             <h4 style="color: var(--success); font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 1.5rem; text-transform: uppercase;">Key Strengths</h4>
                             <div style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">
-                                ${Array.isArray(report.strengths) ? `<ul style="padding-left: 1.2rem; margin: 0;">${report.strengths.map(s => `<li>${s}</li>`).join('')}</ul>` : report.strengths}
+                                ${Array.isArray(report.strengths) ?
+                    `<ul style="padding-left: 1.2rem; margin: 0; list-style-type: '✓ ';">${report.strengths.map(s => `<li style="margin-bottom: 0.5rem;">${s}</li>`).join('')}</ul>` :
+                    report.strengths}
                             </div>
                         </div>
                         <div class="mcq-card" style="border-left: 4px solid #ffaa00; flex: 1;">
                             <h4 style="color: #ffaa00; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 1.5rem; text-transform: uppercase;">Primary Improvements</h4>
                             <div style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">
-                                ${Array.isArray(report.improvements) ? `<ul style="padding-left: 1.2rem; margin: 0;">${report.improvements.map(i => `<li>${i}</li>`).join('')}</ul>` : report.improvements}
+                                ${Array.isArray(report.improvements) ?
+                    `<ul style="padding-left: 1.2rem; margin: 0; list-style-type: '→ ';">${report.improvements.map(i => `<li style="margin-bottom: 0.5rem;">${i}</li>`).join('')}</ul>` :
+                    report.improvements}
                             </div>
                         </div>
                     </div>

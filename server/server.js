@@ -930,7 +930,12 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
             return res.status(503).json({ message: 'AI_ORCHESTRATION_FAILURE: The Gemini Engine is currently overloaded.' });
         }
 
-        interview.history.push({ question: firstQuestion.question, answer: null, feedback: firstQuestion.feedback });
+        interview.history.push({
+            question: firstQuestion.question,
+            answer: null,
+            feedback: firstQuestion.feedback,
+            isCodeRequired: firstQuestion.isCodeRequired || false
+        });
 
         // Update last attempt date
         if (type === 'topic') user.lastTopicInterview = new Date();
@@ -960,23 +965,25 @@ app.post('/api/interview/next', authenticateToken, async (req, res) => {
         if (!interview) return res.status(404).json({ message: 'Interview not found' });
         if (interview.status === 'completed') return res.status(400).json({ message: 'Interview already completed' });
 
-        // Update the last question with the user's answer (Hardened Persistence)
-        const updatedHistory = [...interview.history];
-        updatedHistory[updatedHistory.length - 1].answer = answer;
-        interview.history = updatedHistory;
-        interview.markModified('history');
+        // Update the last question with the user's answer (Secured Update)
+        const lastIndex = interview.history.length - 1;
+        if (lastIndex >= 0) {
+            interview.history[lastIndex].answer = answer;
+            interview.markModified(`history.${lastIndex}.answer`);
+        }
+
+        // INTERMEDIATE SAVE: Secure the user's answer before starting long-running AI work
+        await interview.save();
 
         // TERMINATION CHECK: If history size equals totalQuestions, we are done.
-        // History starts with 1 q (pushed at start). 
-        // Then user answers (lastEntry.answer = answer).
-        // Then we check if we should end or ask another.
         if (interview.history.length >= interview.totalQuestions) {
             interview.status = 'completed';
+
+            // Pass the LATEST interview object to report generation
             const report = await generateFinalReport(interview);
             interview.report = report;
 
-            // Ensure Mongoose detects updates to the history array and report object
-            interview.markModified('history');
+            // Final save for report and completion status
             interview.markModified('report');
             await interview.save();
 
@@ -991,7 +998,12 @@ app.post('/api/interview/next', authenticateToken, async (req, res) => {
         }
 
         const nextQuestion = await getNextInterviewQuestion(interview);
-        interview.history.push({ question: nextQuestion.question, answer: null, feedback: nextQuestion.feedback });
+        interview.history.push({
+            question: nextQuestion.question,
+            answer: null,
+            feedback: nextQuestion.feedback,
+            isCodeRequired: nextQuestion.isCodeRequired || false
+        });
 
         // Ensure Mongoose detects the nested history update
         interview.markModified('history');
@@ -1186,7 +1198,7 @@ app.get('/api/interview/resume/:id', authenticateToken, async (req, res) => {
             nextQuestion: {
                 question: lastQuestion.question,
                 feedback: lastQuestion.feedback,
-                isCodeRequired: lastQuestion.question.includes('code') || lastQuestion.question.includes('Snippet') // Heuristic as it might not be saved
+                isCodeRequired: lastQuestion.isCodeRequired || false
             }
         });
     } catch (error) {
