@@ -173,22 +173,29 @@ async function getNextInterviewQuestion(interview) {
     const codeCount = interview.history.filter(h => h.isCodeRequired).length;
     const canAskCode = codeCount < 3;
 
+    const lastInteraction = interview.history[interview.history.length - 1];
     const prompt = `
         ${context}
         Current Session Status: Question #${qCount} out of ${interview.totalQuestions}.
-        Full Transcript Context: ${JSON.stringify(interview.history)}
-        Current Code Question Count: ${codeCount}/3.
+        Full Session Transcript: ${JSON.stringify(interview.history)}
         
-        CRITICAL TASK: Ask the NEXT relevant technical question. 
-        - PROHIBITED QUESTIONS: You MUST NOT repeat any of the following: ${JSON.stringify(usedQuestions)}.
-        - QUESTION TYPE: ${canAskCode ? 'Prefer theoretical, but you can ask for code if highly relevant (limit 3 total).' : 'MANDATORY: Ask a THEORETICAL question only.'}
-        - LENGTH CONSTRAINTS: 
-            1. "question": EXACTLY 1-3 LINES. DO NOT EXCEED 3 LINES.
-            2. "feedback": EXACTLY 1-2 LINES acknowledging the previous answer. DO NOT EXCEED 2 LINES.
-        - TONE & CRITIQUE: Be professional and critical. If the user's previous answer was irrelevant, shallow, or incorrect, acknowledge it firmly (e.g., "That response doesn't address the technical core of the question...") instead of being overly nice. 
+        LATEST INTERACTION FOR IMMEDIATE EVALUATION:
+        Interviewer: ${lastInteraction.question}
+        Candidate: ${lastInteraction.answer || '[ NO RESPONSE PROVIDED ]'}
+
+        TASK:
+        1. CRITICAL APPRAISAL: In the "feedback" field, provide a direct, critical, and session-aware response to the Candidate's LATEST answer specifically. 
+        - If the answer was weak, generic, or incorrect, highlight the gap (e.g., "While you mentioned X, you missed the critical role of Y in this architecture...").
+        - If it was irrelevant, state it firmly: "That response doesn't address the technical implementation of X."
+        2. ASK THE NEXT QUESTION: Generate a unique, challenging technical follow-up.
+        
+        CONSTRAINTS:
+        - "feedback": 1-2 LINES maximum. PINPOINT ACCURACY REQUIRED.
+        - "question": 1-3 LINES maximum. NO REPEATS of core concepts from: ${JSON.stringify(usedQuestions)}.
+        - QUESTION TYPE: ${canAskCode ? 'Theoretical or Code (max 3 code total)' : 'THEORETICAL ONLY'}.
         
         JSON FORMAT ONLY:
-        {"question": "str", "isCodeRequired": boolean, "feedback": "Brief, critical feedback (max 2 lines)"}
+        {"question": "str", "isCodeRequired": boolean, "feedback": "Direct evaluation of latest answer"}
     `;
 
     try {
@@ -208,24 +215,25 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model) 
     const codeCount = interview.history.filter(h => h.isCodeRequired).length;
     const canAskCode = codeCount < 3;
 
+    const lastInteraction = interview.history[interview.history.length - 1];
     const prompt = `
-        System: You are a high-precision Technical Interviewer. 
-        Focus Area: ${topic}.
+        System: High-Precision Technical Interviewer for ${topic}.
         Sub-topic Target: ${checkpoint.subtopic}.
-        Session Context: Question #${qCount} of ${interview.totalQuestions}.
-        Current Code Question Count: ${codeCount}/3.
-        Full Transcript Context: ${JSON.stringify(interview.history)}
-
-        Task: Generate a UNIQUE challenging technical question.
         
-        CRITICAL RULES:
-        1. NO REPEATS: Do NOT repeat the core concept of: ${JSON.stringify(usedQuestions)}.
-        2. QUESTION TYPE: ${canAskCode ? 'Focus on depth. Coding challenges allowed (max 3 total).' : 'MANDATORY: Ask a THEORETICAL/ARCHITECTURAL question only.'}
-        3. LENGTH: "question" (max 3 lines), "feedback" (max 2 lines).
-        4. CRITIQUE: If the user provided irrelevant text previously, provide a firm, professional correction in the "feedback" field.
+        LATEST INTERACTION FOR INDEBT EVALUATION:
+        Q: ${lastInteraction.question}
+        A: ${lastInteraction.answer || '[ NO RESPONSE ]'}
+
+        TASK:
+        1. PINPOINT FEEDBACK: In the "feedback" field, critically evaluate the A (Answer) above. Do not be generic. If the candidate missed a nuance (e.g., synchronization in Collections), point it out specifically.
+        2. UNIQUE NEXT Q: Generate a new question for ${checkpoint.subtopic}. NO CONCEPTUAL REPEATS of: ${JSON.stringify(usedQuestions)}.
+        
+        RULES:
+        - FEEDBACK: Max 2 lines. Direct and critical.
+        - QUESTION: Max 3 lines. ${canAskCode ? 'Code writing allowed (total limit 3).' : 'THEORETICAL only.'}
         
         JSON FORMAT ONLY:
-        {"question": "str (MAX 3 LINES)", "isCodeRequired": boolean, "feedback": "Brief, critical acknowledgment (MAX 2 LINES)."}
+        {"question": "str", "isCodeRequired": boolean, "feedback": "Specific, technical critique of the latest answer."}
     `;
     const result = await model.generateContent(prompt);
     let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");
