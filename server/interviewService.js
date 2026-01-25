@@ -4,10 +4,12 @@ const { Question } = require('./models');
 let genAI = null;
 
 const topicContext = {
-    'java': 'Core Java logic/syntax. Cover: Loops, arrays, strings, OOP, Collections, Exception handling.',
-    'selenium': 'Selenium WebDriver in JAVA ONLY. Cover: Finding elements (ID, XPath, CSS), Actions, Sync strategies, Framework basics.',
-    'sql': 'Relational SQL. Cover: DDL, DML, JOINS, Subqueries, Indexes.',
-    'functional': 'Functional Testing. Topics: Agile, SDLC, STLC, V-Model, QA/QE/QC, White/Black Box, Static/Dynamic, V&V, GUI, Strategies (Regression, Smoke, Sanity), Defect Lifecycle.'
+    'java': 'Core Java logic/syntax. Cover: Loops, arrays, strings, OOP (Encapsulation, Inheritance, Abstraction, Interface), Polymorphism, Overloading/Overriding, Constructors, Garbage Collection, Exceptions (throw/throws), final, Java 8, Generics, Collections (HashMap, ArrayList, LinkedList), Algorithms (Reverse, missing/duplicates).',
+    'selenium': 'Selenium WebDriver in JAVA ONLY. Cover: Selenium 3 vs 4, WebDriver Interface, Locators (dynamic XPath/CSS), findElement vs findElements, Waits (Implicit/Explicit/Fluent), popups/alerts, Actions class, Shadow DOM, Dropdowns, Screenshots, Apache POI/Data-driven, POM, Page Factory.',
+    'sql': 'Relational SQL. Cover: DDL, DML, JOINS, Subqueries (Nth salary), Primary vs Unique Keys, Aggregate functions. JDBC: Connection interface, PreparedStatements, connection management.',
+    'functional': 'Functional Testing. Topics: SDLC/STLC (Waterfall/Agile), Bug lifecycle (flow/owner), Regression vs Retesting, Smoke vs Sanity, Functional vs Non-functional (Stress/Load/Accessibility), Levels of Testing (System/UAT), Defect management tools, Test Plan/Scenario/Case design.',
+    'poi': 'Apache POI for Excel Read/Write. OPERATIONS: Workbook/Sheet/Row/Cell handling, XLSX/XLS difference. POM: Dependency configuration. Data-driven testing integration with Selenium.',
+    'testng': 'TestNG Framework. SYLLABUS: Annotations (@Test, @Before/After), Assertions (Hard vs Soft), Data Driven (@DataProvider, XML), parallel execution, Test priority/dependencies, dependsOnMethods, testng.xml (Groups, Parameters), POM integration.'
 };
 
 async function getNextInterviewQuestion(interview) {
