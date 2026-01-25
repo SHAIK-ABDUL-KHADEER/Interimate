@@ -845,34 +845,38 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
     const empId = req.user.empId;
 
     try {
-        // Atomic Check & Deduct using findOneAndUpdate
-        const user = await User.findOneAndUpdate(
+        // BYPASS: Everything is free for now.
+        const user = await User.findOne({ username: empId });
+
+        if (!user) {
+            return res.status(404).json({ message: 'PROTOCOL_ERROR: User identity not found.' });
+        }
+
+        /* 
+        // Original Credit/Plan Logic (Preserved for future restoration)
+        const userWithCredits = await User.findOneAndUpdate(
             { username: empId, interviewCredits: { $gt: 0 } },
             { $inc: { interviewCredits: -1 } },
             { new: true }
         );
+        */
 
-        if (!user) {
-            // Check if user exists vs just no credits
-            const exists = await User.findOne({ username: empId });
-            if (!exists) return res.status(404).json({ message: 'PROTOCOL_ERROR: User identity not found.' });
-            return res.status(403).json({ message: 'INSUFFICIENT_CREDITS: Please upgrade your plan to continue.' });
-        }
-
-        // Guard: Paid plan check for resume/role-resume
+        // BYPASS: Paid plan check for resume/role-resume (Disabled)
+        /*
         if ((type === 'resume' || type === 'role-resume') && user.plan !== 'paid') {
-            // Refund credit if they shouldn't have been able to trigger this
             await User.updateOne({ username: empId }, { $inc: { interviewCredits: 1 } });
             return res.status(403).json({ message: 'UNAUTHORIZED: Professional evaluations require Premium Tier.' });
         }
+        */
 
         // Validate Role + Resume requirements
         if (type === 'role-resume' && (!targetRole || targetRole.trim().length < 3)) {
-            await User.updateOne({ username: empId }, { $inc: { interviewCredits: 1 } });
+            // No credit refund needed as we aren't deducting
             return res.status(400).json({ message: 'VALIDATION_FAILURE: Target Role is required for this protocol.' });
         }
 
-        // Guard: Daily limit check
+        // BYPASS: Daily limit check (Disabled)
+        /*
         const today = new Date().setHours(0, 0, 0, 0);
         if (type === 'topic' && user.lastTopicInterview && new Date(user.lastTopicInterview).setHours(0, 0, 0, 0) === today) {
             await User.updateOne({ username: empId }, { $inc: { interviewCredits: 1 } });
@@ -882,6 +886,7 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
             await User.updateOne({ username: empId }, { $inc: { interviewCredits: 1 } });
             return res.status(403).json({ message: 'LIMIT_EXCEEDED: Daily Resume Evaluation limit reached.' });
         }
+        */
 
         let resumeText = '';
         if ((type === 'resume' || type === 'role-resume') && req.file) {
@@ -889,7 +894,7 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
                 const pdfData = await pdf(req.file.buffer);
                 resumeText = pdfData.text;
             } catch (pErr) {
-                await User.updateOne({ username: empId }, { $inc: { interviewCredits: 1 } });
+                // No credit refund needed
                 return res.status(400).json({ message: 'PDF_PARSE_ERROR: Failed to analyze resume content.' });
             }
         }

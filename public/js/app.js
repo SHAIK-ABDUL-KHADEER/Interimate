@@ -376,7 +376,10 @@ const App = {
         if (Auth.isAuthenticated()) {
             if (globalEl && countEl) {
                 globalEl.classList.remove('hidden');
-                countEl.textContent = this.userProgress.interviewCredits || 0;
+                // BYPASS: Show UNLIMITED for now
+                countEl.textContent = 'UNLIMITED';
+                const labelEl = globalEl.querySelector('.credits-label');
+                if (labelEl) labelEl.textContent = 'ACCESS:';
             }
             if (badgeEl && badgeCountEl) {
                 badgeEl.classList.remove('hidden');
@@ -527,33 +530,26 @@ const App = {
                     </div>
                 </div>
 
-                <!-- Landing Page Pricing -->
+                <!-- Landing Page Pricing (Updated for Free Access) -->
                 <div class="pricing-container" style="margin-top: 8rem; border-top: 1px solid var(--border); padding-top: 6rem;">
                     <div style="text-align: center; margin-bottom: 4rem;">
-                        <h2 style="font-size: 2.5rem; font-weight: 900; text-transform: uppercase;">Plans & Pricing</h2>
-                        <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem;">Select your expertise elevation protocol</p>
+                        <h2 style="font-size: 2.5rem; font-weight: 900; text-transform: uppercase;">100% Free Access</h2>
+                        <p style="color: var(--accent); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem;">Exclusive Early Access Protocol: All Premium Features Unlocked</p>
                     </div>
                     <div class="pricing-grid">
-                        <div class="pricing-card">
-                            <div class="plan-name">FREE</div>
-                            <div class="plan-price">₹0<span>/mo</span></div>
-                            <ul class="plan-features">
+                        <div class="pricing-card premium" style="grid-column: span 2; max-width: 600px; margin: 0 auto;">
+                            <div class="premium-badge">EARLY ACCESS</div>
+                            <div class="plan-name">SIGMA UNLIMITED</div>
+                            <div class="plan-price">₹0<span>/life</span></div>
+                            <ul class="plan-features" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: left;">
                                 <li>UNLIMITED QUIZ QUESTIONS</li>
                                 <li>UNLIMITED CODE CHALLENGES</li>
-                                <li>1 FREE TOPIC INTERVIEW</li>
+                                <li>UNLIMITED TOPIC INTERVIEWS</li>
+                                <li>RESUME-BASED AI EVALUATIONS</li>
+                                <li>ROLE-SPECIFIC SIMULATIONS</li>
+                                <li>REAL-TIME ARCHITECTURE FEEDBACK</li>
                             </ul>
-                            <button class="btn-secondary" style="margin-top: auto;" onclick="App.setState('register')">START FOR FREE</button>
-                        </div>
-                        <div class="pricing-card premium">
-                            <div class="premium-badge">RECOMMENDED</div>
-                            <div class="plan-name">ADVANCED</div>
-                            <div class="plan-price">₹99<span>/life</span></div>
-                            <ul class="plan-features">
-                                <li>UNLIMITED EVERYTHING</li>
-                                <li>RESUME-BASED AI INTERVIEWS</li>
-                                <li>3 FULL INTERVIEW SESSIONS</li>
-                            </ul>
-                            <button class="btn-primary" style="margin-top: auto;" onclick="App.setState('register')">GET FULL ACCESS</button>
+                            <button class="btn-primary" style="margin-top: 2rem;" onclick="App.setState('register')">GET UNLIMITED ACCESS NOW</button>
                         </div>
                     </div>
                 </div>
@@ -1376,46 +1372,23 @@ const App = {
         container.innerHTML = `
             <div class="pricing-container">
                 <div style="text-align: center; margin-bottom: 4rem;">
-                    <h2 style="font-size: 3rem; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em;">ACCESS PLANS</h2>
-                    <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem;">Select your expertise elevation protocol</p>
+                    <h2 style="font-size: 3rem; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; color: var(--accent);">MISSION: UNLOCKED</h2>
+                    <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem;">All premium protocols are currently unrestricted for all operatives.</p>
                 </div>
                 <div class="pricing-grid">
-                    <div class="pricing-card">
-                        <div class="plan-name">FREE</div>
-                        <div class="plan-price">₹0<span>/mo</span></div>
-                        <ul class="plan-features">
-                            <li>UNLIMITED QUIZ QUESTIONS</li>
-                            <li>UNLIMITED CODE CHALLENGES</li>
-                            <li>1 FREE TOPIC INTERVIEW</li>
-                            <li class="disabled">RESUME-BASED INTERVIEWS</li>
-                            <li class="disabled">3 INTERVIEW SESSIONS</li>
+                    <div class="pricing-card premium" style="grid-column: span 2; max-width: 700px; margin: 0 auto; border: 2px solid var(--accent);">
+                        <div class="premium-badge">CURRENT ACTIVE STATE</div>
+                        <div class="plan-name">PROMETHEUS UNBOUND</div>
+                        <div class="plan-price">FREE ACCESS</div>
+                        <ul class="plan-features" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0;">
+                            <li>✓ UNLIMITED TECHNICAL QUIZZES</li>
+                            <li>✓ UNLIMITED CODING CHALLENGES</li>
+                            <li>✓ UNLIMITED TOPIC INTERVIEWS</li>
+                            <li>✓ UNLIMITED RESUME EVALUATIONS</li>
+                            <li>✓ ADVANCED ROLE-SPECIFIC DRILLS</li>
+                            <li>✓ FULL ARCHITECTURAL FEEDBACK</li>
                         </ul>
-                        <button class="btn-secondary" style="margin-top: auto;">ACTIVE BY DEFAULT</button>
-                    </div>
-                    <div class="pricing-card premium">
-                        <div class="premium-badge">RECOMMENDED</div>
-                        <div class="plan-name">ADVANCED</div>
-                        <div class="plan-price" id="plan-price-display">₹99<span>/life</span></div>
-                        <ul class="plan-features">
-                            <li>UNLIMITED QUIZ QUESTIONS</li>
-                            <li>UNLIMITED CODE CHALLENGES</li>
-                            <li>3 FULL INTERVIEW CREDITS</li>
-                            <li>RESUME-BASED AI INTERVIEWS</li>
-                            <li>DAILY LIMIT: 1 TOPIC + 1 RESUME</li>
-                        </ul>
-                        
-                        <div class="coupon-section" style="margin-top: 2rem; border-top: 1px solid #111; padding-top: 1.5rem;">
-                            <div style="display: flex; gap: 0.5rem;">
-                                <input type="text" id="coupon-code" placeholder="ENTER CODE" style="background: #000; border: 1px solid #222; padding: 0.6rem; color: #fff; font-family: var(--font-mono); font-size: 0.6rem; flex: 1;">
-                                <button class="btn-primary" style="width: auto; padding: 0 1rem; font-size: 0.6rem;" onclick="App.applyCoupon()">APPLY</button>
-                            </div>
-                            <div id="coupon-message" style="font-size: 0.5rem; margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.1em;"></div>
-                        </div>
-
-                        ${this.userProgress.plan === 'paid' ?
-                `<button class="btn-secondary" style="margin-top: 2rem; border-color: var(--accent); color: var(--accent); cursor: default !important;">PREMIUM ACTIVE</button>` :
-                `<button class="btn-primary" style="margin-top: 2rem;" id="buy-btn" onclick="App.handlePayment()">UPGRADE TO PREMIUM</button>`
-            }
+                        <button class="btn-primary" style="width: 100%; letter-spacing: 0.3em;" onclick="App.setState('dashboard')">PROCEED TO DASHBOARD</button>
                     </div>
                 </div>
             </div>
