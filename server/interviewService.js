@@ -170,13 +170,18 @@ async function getNextInterviewQuestion(interview) {
     }
 
     const usedQuestions = interview.history.map(h => h.question);
+    const codeCount = interview.history.filter(h => h.isCodeRequired).length;
+    const canAskCode = codeCount < 3;
+
     const prompt = `
         ${context}
         Current Session Status: Question #${qCount} out of ${interview.totalQuestions}.
         History of Questions Already Asked: ${JSON.stringify(usedQuestions)}
+        Current Code Question Count: ${codeCount}/3.
         
         CRITICAL TASK: Ask the NEXT relevant technical question. 
         - PROHIBITED QUESTIONS: You MUST NOT repeat any of the following already asked questions: ${JSON.stringify(usedQuestions)}.
+        - QUESTION TYPE: ${canAskCode ? 'Prefer theoretical, but you can ask for code if highly relevant (limit 3 total).' : 'MANDATORY: Ask a THEORETICAL question only. No code writing allowed now.'}
         - acknowledge previous answer briefly in "feedback" field.
         
         JSON FORMAT ONLY:
@@ -197,20 +202,23 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model) 
     const blueprint = checkpointBlueprint[topic] || [];
     const checkpoint = blueprint.find(c => qCount >= c.range[0] && qCount <= c.range[1]) || { subtopic: topic, difficulty: 'Intermediate' };
     const usedQuestions = interview.history.map(h => h.question);
+    const codeCount = interview.history.filter(h => h.isCodeRequired).length;
+    const canAskCode = codeCount < 3;
 
     const prompt = `
         System: You are a high-precision Technical Interviewer. 
         Focus Area: ${topic}.
         Sub-topic Target: ${checkpoint.subtopic}.
         Session Context: Question #${qCount} of ${interview.totalQuestions}.
+        Current Code Question Count: ${codeCount}/3.
         Already Asked Questions: ${JSON.stringify(usedQuestions)}
 
         Task: Generate a UNIQUE challenging technical question.
         
         CRITICAL RULES:
         1. NO REPEATS: Do NOT repeat the wording or core concept of these questions: ${JSON.stringify(usedQuestions)}.
-        2. BREVITY: MAX 3 LINES.
-        3. CODING: If appropriate for ${checkpoint.subtopic}, ask for a code snippet or SQL query.
+        2. QUESTION TYPE: ${canAskCode ? 'Focus on depth. Coding challenges allowed (max 3 total).' : 'MANDATORY: Ask a THEORETICAL/ARCHITECTURAL question only.'}
+        3. BREVITY: MAX 3 LINES.
         
         JSON FORMAT ONLY:
         {"question": "str (MAX 3 LINES)", "isCodeRequired": boolean, "feedback": "Brief acknowledgment (MAX 3 LINES)."}
@@ -225,13 +233,25 @@ async function generateFinalReport(interview) {
     const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
 
     const prompt = `
-        You are a Senior Technical Recruiter. Evaluate this candidate based on their 10-question interview session.
+        You are a Senior Technical Recruiter and Tech Lead. Evaluate this candidate with absolute accuracy based on their 10-question interview session.
         Candidate Name: ${interview.interviewerName}
         Topics/Context: ${interview.type === 'topic' ? interview.topics.join(', ') : (interview.type === 'role-resume' ? `Role: ${interview.targetRole} + Resume` : 'Resume Based')}
-        Full Interview History: ${JSON.stringify(interview.history)}
+        
+        Full Interview Transcript:
+        ${interview.history.map((h, i) => `
+        Q${i + 1}: ${h.question}
+        User Answer: ${h.answer || '[ NO RESPONSE PROVIDED ]'}
+        `).join('\n')}
 
-        Task: Provide a detailed assessment.
-        JSON FORMAT: { "strengths": ["str"], "improvements": ["str"], "score": 1-10, "summary": "str" }
+        Task: Provide a high-fidelity assessment.
+        - SCORING: Be highly critical. Only a perfect, industry-ready candidate gets a 9 or 10.
+        - RAG STATUS:
+            - Green: Ready for immediate deployment (Score 8-10)
+            - Amber: High potential, needs specific training (Score 5-7)
+            - Red: Not currently suitable (Score 1-4)
+        
+        JSON FORMAT ONLY:
+        { "strengths": ["str"], "improvements": ["str"], "score": number (1-10), "summary": "str" }
     `;
 
     try {

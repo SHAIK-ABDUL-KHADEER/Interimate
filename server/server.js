@@ -960,9 +960,11 @@ app.post('/api/interview/next', authenticateToken, async (req, res) => {
         if (!interview) return res.status(404).json({ message: 'Interview not found' });
         if (interview.status === 'completed') return res.status(400).json({ message: 'Interview already completed' });
 
-        // Update the last question with the user's answer
-        const lastEntry = interview.history[interview.history.length - 1];
-        lastEntry.answer = answer;
+        // Update the last question with the user's answer (Hardened Persistence)
+        const updatedHistory = [...interview.history];
+        updatedHistory[updatedHistory.length - 1].answer = answer;
+        interview.history = updatedHistory;
+        interview.markModified('history');
 
         // TERMINATION CHECK: If history size equals totalQuestions, we are done.
         // History starts with 1 q (pushed at start). 
