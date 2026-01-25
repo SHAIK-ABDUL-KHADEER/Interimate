@@ -1035,6 +1035,16 @@ pre code {
     font-weight: 700;
 }
 
+.leaderboard-table tr.self-highlight {
+    background-color: rgba(212, 255, 0, 0.1) !important;
+    border-left: 4px solid var(--accent);
+}
+
+.leaderboard-table tr.self-highlight td {
+    color: var(--accent);
+    font-weight: 800;
+}
+
 /* Tabs */
 .tabs-container {
     display: flex;

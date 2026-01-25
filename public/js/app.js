@@ -1645,7 +1645,7 @@ const App = {
                         </thead>
                         <tbody>
                             ${leaders.map((u, i) => `
-                                <tr>
+                                <tr class="${u.empId === Auth.empId ? 'self-highlight' : ''}">
                                     <td class="${i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : ''}">#${(i + 1).toString().padStart(2, '0')}</td>
                                     <td>${u.empId}</td>
                                     <td>${u.totalCorrect}</td>
