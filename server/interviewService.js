@@ -3,13 +3,45 @@ const { Question } = require('./models');
 
 let genAI = null;
 
-const topicContext = {
-    'java': 'Core Java logic/syntax. Cover: Loops, arrays, strings, OOP (Encapsulation, Inheritance, Abstraction, Interface), Polymorphism, Overloading/Overriding, Constructors, Garbage Collection, Exceptions (throw/throws), final, Java 8, Generics, Collections (HashMap, ArrayList, LinkedList), Algorithms (Reverse, missing/duplicates).',
-    'selenium': 'Selenium WebDriver in JAVA ONLY. Cover: Selenium 3 vs 4, WebDriver Interface, Locators (dynamic XPath/CSS), findElement vs findElements, Waits (Implicit/Explicit/Fluent), popups/alerts, Actions class, Shadow DOM, Dropdowns, Screenshots, Apache POI/Data-driven, POM, Page Factory.',
-    'sql': 'Relational SQL. Cover: DDL, DML, JOINS, Subqueries (Nth salary), Primary vs Unique Keys, Aggregate functions. JDBC: Connection interface, PreparedStatements, connection management.',
-    'functional': 'Functional Testing. Topics: SDLC/STLC (Waterfall/Agile), Bug lifecycle (flow/owner), Regression vs Retesting, Smoke vs Sanity, Functional vs Non-functional (Stress/Load/Accessibility), Levels of Testing (System/UAT), Defect management tools, Test Plan/Scenario/Case design.',
-    'poi': 'Apache POI for Excel Read/Write. OPERATIONS: Workbook/Sheet/Row/Cell handling, XLSX/XLS difference. POM: Dependency configuration. Data-driven testing integration with Selenium.',
-    'testng': 'TestNG Framework. SYLLABUS: Annotations (@Test, @Before/After), Assertions (Hard vs Soft), Data Driven (@DataProvider, XML), parallel execution, Test priority/dependencies, dependsOnMethods, testng.xml (Groups, Parameters), POM integration.'
+const checkpointBlueprint = {
+    'java': [
+        { range: [1, 10], subtopic: 'Bedrock Syntax & Logic', difficulty: 'Absolute Beginner' },
+        { range: [11, 25], subtopic: 'OOP Basics & Methods', difficulty: 'Beginner' },
+        { range: [26, 40], subtopic: 'Advanced OOP & Interfaces', difficulty: 'Intermediate' },
+        { range: [41, 55], subtopic: 'Memory, GC & Constructors', difficulty: 'Intermediate' },
+        { range: [56, 70], subtopic: 'Exception Handling Protocol', difficulty: 'Advanced' },
+        { range: [71, 85], subtopic: 'Collections Framework Mastery', difficulty: 'Advanced' },
+        { range: [86, 100], subtopic: 'Java 8 & Data Structures', difficulty: 'Expert' }
+    ],
+    'selenium': [
+        { range: [1, 15], subtopic: 'Architecture & ID/XPath Basics', difficulty: 'Absolute Beginner' },
+        { range: [16, 35], subtopic: 'Dynamic XPath & CSS Selectors', difficulty: 'Intermediate' },
+        { range: [36, 55], subtopic: 'Synchronization & Logic Waits', difficulty: 'Intermediate' },
+        { range: [56, 75], subtopic: 'Actions, JSExecutor & Shadow DOM', difficulty: 'Advanced' },
+        { range: [76, 100], subtopic: 'POM and Page Factory frameworks', difficulty: 'Expert' }
+    ],
+    'sql': [
+        { range: [1, 15], subtopic: 'DDL/DML bedrock fundamentals', difficulty: 'Absolute Beginner' },
+        { range: [16, 35], subtopic: 'Keys, Constraints & Filters', difficulty: 'Beginner' },
+        { range: [36, 60], subtopic: 'Complex Relational Joins', difficulty: 'Intermediate' },
+        { range: [61, 80], subtopic: 'Subqueries & Nth Salary logic', difficulty: 'Advanced' },
+        { range: [81, 100], subtopic: 'JDBC & Transaction Protocols', difficulty: 'Expert' }
+    ],
+    'functional': [
+        { range: [1, 25], subtopic: 'SDLC/STLC Lifecycle models', difficulty: 'Beginner' },
+        { range: [26, 50], subtopic: 'Testing Types & Levels', difficulty: 'Intermediate' },
+        { range: [51, 75], subtopic: 'Defect Management Lifecycle', difficulty: 'Advanced' },
+        { range: [76, 100], subtopic: 'UAT & Agile Methodologies', difficulty: 'Expert' }
+    ],
+    'testng': [
+        { range: [1, 20], subtopic: 'Annotations and priority systems', difficulty: 'Beginner' },
+        { range: [21, 40], subtopic: 'Assertions & Grouping XML', difficulty: 'Intermediate' },
+        { range: [41, 60], subtopic: 'Parallelism & DataProviders', difficulty: 'Advanced' }
+    ],
+    'poi': [
+        { range: [1, 25], subtopic: 'Workbook and Sheet operations', difficulty: 'Intermediate' },
+        { range: [26, 50], subtopic: 'Data-Driven Framework logic', difficulty: 'Advanced' }
+    ]
 };
 
 async function getNextInterviewQuestion(interview) {
@@ -145,23 +177,26 @@ async function getNextInterviewQuestion(interview) {
 }
 
 async function generateTopicQuestionWithGemini(interview, topic, qCount, model) {
+    const blueprint = checkpointBlueprint[topic] || [];
+    const checkpoint = blueprint.find(c => qCount >= c.range[0] && qCount <= c.range[1]) || { subtopic: topic, difficulty: 'Intermediate' };
+
     const prompt = `
-        You are a Technical Interviewer. Focus strictly on: ${topic}.
-        Syllabus Context: ${topicContext[topic]}
-        Session Status: Question #${qCount} of 10.
+        System: You are a high-precision Technical Interviewer. 
+        Focus Area: ${topic}.
+        Sub-topic Target: ${checkpoint.subtopic}.
+        Session Context: Question #${qCount} of ${interview.totalQuestions + 1}.
         History: ${JSON.stringify(interview.history)}
 
-        Task: Generate a UNIQUE challenging technical question for ${topic}.
+        Task: Generate a UNIQUE challenging technical question for ${topic} focusing on ${checkpoint.subtopic}.
         
         CRITICAL RULES:
-        1. BREVITY: The question MUST be concise and limited to exactly 1-3 sentences (MAX 3 LINES).
-        2. CODING: If this is the second or third question in this topic block, CONSIDER asking for a code snippet or SQL query. 
-        3. MANDATORY CODE: At least one question in the FULL interview MUST be "isCodeRequired": true. Current session index: ${qCount} of ${interview.totalQuestions + 1}.
-        
-        CRITICAL: DO NOT include any feedback, greeting, or acknowledgement in the "question" field. Place all conversational text in the "feedback" field (MAX 3 LINES).
+        1. BREVITY: All conversational text and the question itself MUST be concise. Total limit: 3 LINES.
+        2. ANTI-DUPLICATION: Do NOT repeat any concepts or wording seen in the History.
+        3. CODING: If appropriate for ${checkpoint.subtopic}, ask for a code snippet or SQL query.
+        4. MANDATORY CODE: Current status: ${interview.history.some(h => h.isCodeRequired) ? 'Code already asked' : 'CODE CHALLENGE REQUIRED SOON'}.
         
         JSON FORMAT ONLY:
-        {"question": "str", "isCodeRequired": boolean, "feedback": "Briefly acknowledge previous answer (MAX 3 LINES)."}
+        {"question": "str (MAX 3 LINES)", "isCodeRequired": boolean, "feedback": "Brief acknowledgment (MAX 3 LINES)."}
     `;
     const result = await model.generateContent(prompt);
     let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");

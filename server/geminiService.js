@@ -1,12 +1,44 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const topicContext = {
-    'java': 'Core Java logic/syntax. FOR QUESTIONS 1-20: Focus on VERY BASIC logic: Simple loops, basic array handling, string operations (reversing, char count), if-else logic. FOR QUESTIONS 21+: OOP (Encapsulation, Inheritance, Abstraction, Interface), Polymorphism types (compile/runtime), method Overloading/Overriding, Constructors, Garbage Collection, Exception handling (try-catch, throw vs throws, finally), RunTime vs CompileTime Errors, final keyword, Java 8 Features, Generics, Collections (HashMap vs HashSet, ArrayList vs LinkedList), Binary Search/Algorithms, Strings/Arrays algorithms (Reverse, find missing/duplicates, largest/smallest).',
-    'selenium': 'Selenium WebDriver in JAVA ONLY. FOR QUESTIONS 1-20: Focus heavily on FINDING ELEMENTS: ID, name, className, and Basic XPath/CSS selectors. FOR QUESTIONS 21+: Selenium 3 vs 4, WebDriver Interface, firefox/chrome usage, Locators (dynamic XPath/CSS), findElement vs findElements, Waits (Implicit/Explicit/Fluent), Thread.sleep vs wait, popups/alerts/windows handling, StaleElementReferenceException, Actions class, Shadow DOM, selectByVisibleText/Index/Value, Screenshot capture, JavaScriptExecutor alternatives to sendKeys, Apache POI (POI Read/Write, Workbook/Sheet/Row/Cell), Framework Design (POM, Page Factory). NO PYTHON.',
-    'sql': 'Relational SQL. FOR QUESTIONS 1-20: Strictly BASIC DDL (CREATE, ALTER) and DML (INSERT, UPDATE, DELETE, simple SELECT) & basics like Primary vs Unique Key. FOR QUESTIONS 21+: Multi-table JOINS (Inner, Left, Right, Full), Subqueries (Nth highest salary logic), Aggregate functions (SUM, COUNT, etc.), filters (age > 50, etc.). JDBC Context: Connection interface, PreparedStatements, DB connection protocols, handling connection leaks (closing connections).',
-    'functional': 'Manual testing concepts. SDLC/STLC models (Waterfall vs Agile), Bug life cycle (Status flow, owner), Regression vs Retesting, Smoke vs Sanity, Functional vs Non-functional (Performance, Stress vs Load, Accessibility), Levels of Testing (Unit, Integration, System, UAT), UAT execution, Defect management tools, Test scenario vs Case, Test Design Techniques, Test Plan contents.',
-    'poi': 'Apache POI for Excel Read/Write. OPERATIONS: Workbook/Sheet/Row/Cell handling, XLSX/XLS difference. POM: Dependency configuration. Data-driven testing integration with Selenium.',
-    'testng': 'TestNG Framework. SYLLABUS: Annotations (@Test, @Before/After Suite/Test/Class/Method), Assertions (Hard vs Soft), Data Driven (@DataProvider, XML), Parallel/Multi-browser execution, Failed test rerun, Test priority/dependencies, dependsOnMethods, testng.xml (Groups, Parameters), POM integration.'
+const checkpointBlueprint = {
+    'java': [
+        { range: [1, 10], subtopic: 'Bedrock Syntax, Variables, and Basic Data Types', difficulty: 'Absolute Beginner' },
+        { range: [11, 25], subtopic: 'OOP Basics: Classes, Objects, and Methods', difficulty: 'Beginner' },
+        { range: [26, 40], subtopic: 'Advanced OOP: Inheritance, Polymorphism, Abstraction, Interfaces', difficulty: 'Intermediate' },
+        { range: [41, 55], subtopic: 'Memory Management, Garbage Collection, and Constructors', difficulty: 'Intermediate' },
+        { range: [56, 70], subtopic: 'Exception Handling: try-catch, throw vs throws, finally', difficulty: 'Advanced' },
+        { range: [71, 85], subtopic: 'Java Collections Framework: Map, Set, List implementations', difficulty: 'Advanced' },
+        { range: [86, 100], subtopic: 'Java 8 Features (Lambdas/Streams) and Complex Algorithms', difficulty: 'Expert' }
+    ],
+    'selenium': [
+        { range: [1, 15], subtopic: 'Architecture and Basic Locators (ID, LinkText, Name)', difficulty: 'Absolute Beginner' },
+        { range: [16, 35], subtopic: 'Advanced Selectors (Dynamic XPath and CSS Selectors)', difficulty: 'Intermediate' },
+        { range: [36, 55], subtopic: 'Synchronization: Implicit, Explicit, and Fluent Waits', difficulty: 'Intermediate' },
+        { range: [56, 75], subtopic: 'Advanced Interactions: JavaScriptExecutor, Actions Class, Shadow DOM', difficulty: 'Advanced' },
+        { range: [76, 100], subtopic: 'Framework Design: Page Object Model (POM) and Page Factory', difficulty: 'Expert' }
+    ],
+    'sql': [
+        { range: [1, 15], subtopic: 'DDL (CREATE/ALTER) and DML (INSERT/UPDATE/DELETE) Basics', difficulty: 'Absolute Beginner' },
+        { range: [16, 35], subtopic: 'Data Constraints (Primary/Foreign Keys) and Basic Filtering', difficulty: 'Beginner' },
+        { range: [36, 60], subtopic: 'Aggregations and Relational Joins (Inner, Left, Right, Full)', difficulty: 'Intermediate' },
+        { range: [61, 80], subtopic: 'Subqueries: Correlated and Non-correlated (Nth Salary logic)', difficulty: 'Advanced' },
+        { range: [81, 100], subtopic: 'JDBC Integration and Transaction Management', difficulty: 'Expert' }
+    ],
+    'functional': [
+        { range: [1, 20], subtopic: 'SDLC and STLC Lifecycles (Waterfall vs Agile)', difficulty: 'Absolute Beginner' },
+        { range: [21, 45], subtopic: 'Functional vs Non-Functional Testing and Testing Levels', difficulty: 'Intermediate' },
+        { range: [46, 70], subtopic: 'Defect Management Lifecycle, Severity vs Priority', difficulty: 'Advanced' },
+        { range: [71, 100], subtopic: 'UAT, Agile ceremonies, and Test Strategy Design', difficulty: 'Expert' }
+    ],
+    'testng': [
+        { range: [1, 15], subtopic: 'Annotations (@Test, @Before/After) and priority', difficulty: 'Beginner' },
+        { range: [16, 30], subtopic: 'Assertions (Hard vs Soft) and testng.xml grouping', difficulty: 'Intermediate' },
+        { range: [31, 50], subtopic: 'Data-Driven Testing (@DataProvider) and Parallel Execution', difficulty: 'Advanced' }
+    ],
+    'poi': [
+        { range: [1, 25], subtopic: 'Workbook, Sheet, Row, and Cell handling basics', difficulty: 'Intermediate' },
+        { range: [26, 50], subtopic: 'Advanced Data-Driven Framework integration with Selenium', difficulty: 'Advanced' }
+    ]
 };
 
 let genAI = null;
@@ -17,35 +49,41 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
         if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is missing from .env");
         genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     }
-    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash"; // Strict requirement: gemini-2.5-flash
+    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
     const model = genAI.getGenerativeModel({ model: modelName });
-    const context = topicContext[topic] || topic;
-    const unitNumber = existingCount + 1;
 
-    // Scale difficulty based on question number
-    let difficulty = "Mid-level/Intermediate";
-    if (unitNumber <= 10) difficulty = "Bedrock Basics/Absolute Beginner";
-    else if (unitNumber <= 20) difficulty = "Foundational Core/Elementary";
-    else difficulty = "Standard/Advanced Level";
+    const unitNumber = existingCount + 1;
+    const blueprint = checkpointBlueprint[topic] || [];
+    const checkpoint = blueprint.find(c => unitNumber >= c.range[0] && unitNumber <= c.range[1]) || { subtopic: topic, difficulty: 'Intermediate' };
+
+    // Anti-Duplication: Full history tracking (extract titles or questions)
+    const historyList = type === 'quiz'
+        ? existingData.map(q => q.question || q.data?.question).filter(Boolean)
+        : existingData.map(q => q.title || q.data?.title).filter(Boolean);
 
     let prompt = `
-        System: You are Interimate AI. No bluff, answer only what is needed. NO UNNECESSARY COMMENTS.
-        Target Difficulty: ${difficulty} (Question #${unitNumber}). 
-        Topic: ${topic} (${context}).
-        ${type === 'quiz' ? `Task: Unique MCQ for Question #${unitNumber}. Start from absolute BEDROCK basics if index is 1-20. 
-        CRITICAL FOR MCQs: If the question asks for the "output" or "result" of a code snippet, YOU MUST INCLUDE THE CODE SNIPPET inside the "question" field using markdown backticks (e.g. \`\`\`java \\n [CODE HERE] \\n \`\`\`).` : `Task: Unique Code Snippet Challenge for Question #${unitNumber}. Focus on basic constructs if index is 1-20.`}
-        History (Do NOT repeat anything similar to these): ${type === 'quiz' ? existingData.map(q => q.question).slice(-15).join('|') : existingData.map(q => q.title).slice(-15).join('|')}
+        System: You are Interimate AI. A high-precision curriculum generator. 
+        Target Milestone: Question #${unitNumber} in ${topic}.
+        Checkpoint Sub-topic: ${checkpoint.subtopic}.
+        Linear Difficulty: ${checkpoint.difficulty}.
         
-        CRITICAL: The generated ${type === 'quiz' ? 'question' : 'challenge'} must be completely distinct from the history provided above in both concept and wording.
+        ${type === 'quiz' ? `Task: Generate a UNIQUE MCQ for Question #${unitNumber}. 
+        CRITICAL FOR MCQs: If the question asks for code output, you MUST include the code block in the "question" field using markdown backticks.` : `Task: Code Snippet Challenge for Question #${unitNumber}. Focus on practical implementation of ${checkpoint.subtopic}.`}
         
-        CRITICAL FOR SELENIUM: USE JAVA LANGUAGE ONLY. NEVER USE PYTHON.
+        ANTI-DUPLICATION HISTORY (DO NOT REPEAT CONCEPTS OR WORDING FROM THESE): 
+        ${historyList.join(' | ')}
+        
+        RULES:
+        1. CONCEPTUAL UNIQUENESS: If a concept in history is "Reverse String", you MUST NOT ask anything about reversing strings. Explore a different part of ${checkpoint.subtopic}.
+        2. NO OVERLAP: Do not allocate advanced topics to basic ranges. Stick strictly to ${checkpoint.subtopic}.
+        3. SELENIUM: JAVA ONLY. NO PYTHON.
         
         JSON Schema:
         ${type === 'quiz' ?
             `{"id":${unitNumber},"question":"str","options":["4 str"],"answer":0-3,"explanation":"brief str"}` :
-            `{"id":${unitNumber},"title":"str","description":"brief str with site URL if selenium","template":"snippet str"}`}
+            `{"id":${unitNumber},"title":"str","description":"brief str","template":"snippet str"}`}
         
-        CRITICAL FOR CODE CHALLENGES: The "template" field MUST ONLY contain EMPTY boilerplate (method signatures, class headers). NEVER include solution logic or clues in the template. If the user needs to write a function, just provide the signature and a // TODO comment. 
+        ${type === 'code' ? 'CRITICAL: The "template" field must contain ONLY EMPTY boilerplate (method signatures/class headers). NO LOGIC.' : ''}
         Return ONLY raw JSON. No markdown.
     `;
 
@@ -58,9 +96,8 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
         } catch (error) {
             lastError = error;
             console.error(`[Gemini] Attempt ${i + 1} failed:`, error.message);
-            if (error.message.includes('503') || error.message.includes('overloaded') || error.message.includes('Service Unavailable')) {
+            if (error.message.includes('503') || error.message.includes('overloaded')) {
                 const waitTime = Math.pow(2, i) * 1500;
-                console.log(`[Gemini] Service overloaded. Retrying in ${waitTime}ms...`);
                 await delay(waitTime);
                 continue;
             }
