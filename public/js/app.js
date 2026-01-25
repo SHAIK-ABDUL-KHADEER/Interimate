@@ -380,6 +380,11 @@ const App = {
                 countEl.textContent = 'UNLIMITED';
                 const labelEl = globalEl.querySelector('.credits-label');
                 if (labelEl) labelEl.textContent = 'ACCESS:';
+
+                /* ORIGINAL CREDIT LOGIC (ROLLBACK POINT)
+                countEl.textContent = this.userProgress.interviewCredits || 0;
+                if (labelEl) labelEl.textContent = 'CREDITS:';
+                */
             }
             if (badgeEl && badgeCountEl) {
                 badgeEl.classList.remove('hidden');
@@ -553,6 +558,38 @@ const App = {
                         </div>
                     </div>
                 </div>
+
+                <!-- ORIGINAL PRICING TEMPLATE (ROLLBACK POINT)
+                <div class="pricing-container" style="margin-top: 8rem; border-top: 1px solid var(--border); padding-top: 6rem;">
+                    <div style="text-align: center; margin-bottom: 4rem;">
+                        <h2 style="font-size: 2.5rem; font-weight: 900; text-transform: uppercase;">Plans & Pricing</h2>
+                        <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem;">Select your expertise elevation protocol</p>
+                    </div>
+                    <div class="pricing-grid">
+                        <div class="pricing-card">
+                            <div class="plan-name">FREE</div>
+                            <div class="plan-price">₹0<span>/mo</span></div>
+                            <ul class="plan-features">
+                                <li>UNLIMITED QUIZ QUESTIONS</li>
+                                <li>UNLIMITED CODE CHALLENGES</li>
+                                <li>1 FREE TOPIC INTERVIEW</li>
+                            </ul>
+                            <button class="btn-secondary" style="margin-top: auto;" onclick="App.setState('register')">START FOR FREE</button>
+                        </div>
+                        <div class="pricing-card premium">
+                            <div class="premium-badge">RECOMMENDED</div>
+                            <div class="plan-name">ADVANCED</div>
+                            <div class="plan-price">₹99<span>/life</span></div>
+                            <ul class="plan-features">
+                                <li>UNLIMITED EVERYTHING</li>
+                                <li>RESUME-BASED AI INTERVIEWS</li>
+                                <li>3 FULL INTERVIEW SESSIONS</li>
+                            </ul>
+                            <button class="btn-primary" style="margin-top: auto;" onclick="App.setState('register')">GET FULL ACCESS</button>
+                        </div>
+                    </div>
+                </div>
+                -->
             </div>
         `;
     },
@@ -1392,6 +1429,26 @@ const App = {
                     </div>
                 </div>
             </div>
+
+            <!-- ORIGINAL PRICING TABLE (ROLLBACK POINT)
+            <div class="pricing-container">
+                <div style="text-align: center; margin-bottom: 4rem;">
+                    <h2 style="font-size: 3rem; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em;">ACCESS PLANS</h2>
+                    <p style="color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem;">Select your expertise elevation protocol</p>
+                </div>
+                <div class="pricing-grid">
+                    <div class="pricing-card">
+                        <div class="plan-name">FREE</div>
+                        <div class="plan-price">₹0/mo</div>
+                        <ul class="plan-features">
+                            <li>UNLIMITED QUIZ QUESTIONS</li>
+                            <li>UNLIMITED CODE CHALLENGES</li>
+                            <li>1 FREE TOPIC INTERVIEW</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            -->
         `;
     },
 
