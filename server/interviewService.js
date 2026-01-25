@@ -26,32 +26,45 @@ async function getNextInterviewQuestion(interview) {
 
             // 1. Calculate budgets per topic
             const n = topics.length;
+            let totalTechQuestions = 15; // Floor for 1-3 topics
+            if (n === 4) totalTechQuestions = 20;
+            else if (n === 5) totalTechQuestions = 25;
+            else if (n >= 6) totalTechQuestions = 30;
+
+            const n_for_distribution = n;
             let budgets = [];
-            if (n <= 3) {
-                const totalQ = 10;
-                const basePerTopic = Math.floor(totalQ / n);
-                let remaining = totalQ % n;
-                for (let i = 0; i < n; i++) {
-                    let t = basePerTopic + (remaining > 0 ? 1 : 0);
-                    remaining--;
-                    // Rule: From every 3 questions, 1 should be cached (recall mode)
-                    let c = Math.floor(t / 3);
-                    if (c === 0 && t > 0) c = 1; // At least one recall question per topic
-                    budgets.push({ name: topics[i], total: t, cached: c, new: t - c });
-                }
-            } else {
-                // Scaling: If > 3 topics, we ask 3 questions per topic (3N total)
-                for (let i = 0; i < n; i++) {
-                    budgets.push({ name: topics[i], total: 3, cached: 1, new: 2 });
-                }
+
+            const basePerTopic = Math.floor(totalTechQuestions / n_for_distribution);
+            let remaining = totalTechQuestions % n_for_distribution;
+
+            for (let i = 0; i < n_for_distribution; i++) {
+                let t = basePerTopic + (remaining > 0 ? 1 : 0);
+                remaining--;
+                // Rule: 2 cached per 5 questions (40% ratio)
+                let c = Math.floor(t * 0.4);
+                if (c === 0 && t >= 3) c = 1; // Minimum 1 cached if topic has at least 3 questions
+                budgets.push({ name: topics[i], total: t, cached: c, new: t - c });
             }
+
+            // --- V2 PROTOCOL: QUESTION #1 is ALWAYS SELF-INTRODUCTION ---
+            if (qCount === 1) {
+                return {
+                    question: `Hello ${interview.username}, I am ${interview.interviewerName}. To begin our technical evaluation session, could you please provide a brief self-introduction including your experience with ${topics.join(', ')}?`,
+                    isCodeRequired: false,
+                    feedback: "Initializing Technical Evaluation Protocol..."
+                };
+            }
+
+            // Adjust qCount for technical question index (tech questions start at qCount 2)
+            const techQCount = qCount - 1;
+            if (techQCount > totalTechQuestions) return null; // Should be handled by server, but safety first.
 
             // 2. Determine current topic and mode
             let currentTopic = null, cumulativeTotal = 0, relativeIdx = 0;
             for (const b of budgets) {
-                if (qCount <= cumulativeTotal + b.total) {
+                if (techQCount <= cumulativeTotal + b.total) {
                     currentTopic = b;
-                    relativeIdx = qCount - cumulativeTotal;
+                    relativeIdx = techQCount - cumulativeTotal;
                     break;
                 }
                 cumulativeTotal += b.total;
@@ -140,11 +153,15 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model) 
 
         Task: Generate a UNIQUE challenging technical question for ${topic}.
         
-        CRITICAL: DO NOT include any feedback, greeting, or acknowledgement in the "question" field. The "question" field must contain ONLY the technical question itself. Place all conversational text in the "feedback" field.
-        CRITICAL: The technical question MUST be concise and limited to exactly 1-3 sentences (maximum 3 lines).
+        CRITICAL RULES:
+        1. BREVITY: The question MUST be concise and limited to exactly 1-3 sentences (MAX 3 LINES).
+        2. CODING: If this is the second or third question in this topic block, CONSIDER asking for a code snippet or SQL query. 
+        3. MANDATORY CODE: At least one question in the FULL interview MUST be "isCodeRequired": true. Current session index: ${qCount} of ${interview.totalQuestions + 1}.
+        
+        CRITICAL: DO NOT include any feedback, greeting, or acknowledgement in the "question" field. Place all conversational text in the "feedback" field (MAX 3 LINES).
         
         JSON FORMAT ONLY:
-        {"question": "str", "isCodeRequired": boolean, "feedback": "Briefly acknowledge previous answer if session is active."}
+        {"question": "str", "isCodeRequired": boolean, "feedback": "Briefly acknowledge previous answer (MAX 3 LINES)."}
     `;
     const result = await model.generateContent(prompt);
     let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");

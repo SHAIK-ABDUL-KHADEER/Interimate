@@ -895,9 +895,12 @@ app.post('/api/interview/start', authenticateToken, upload.single('resume'), asy
         }
 
         const topicsArray = type === 'topic' ? JSON.parse(topics) : [];
-        let totalQuestions = 10;
-        if (type === 'topic' && topicsArray.length > 3) {
-            totalQuestions = topicsArray.length * 3;
+        let totalQuestions = 15; // Floor for 1-3 topics
+        if (type === 'topic') {
+            const n = topicsArray.length;
+            if (n === 4) totalQuestions = 20;
+            else if (n === 5) totalQuestions = 25;
+            else if (n >= 6) totalQuestions = 30; // Cap at 30
         }
 
         const interview = new Interview({
@@ -953,7 +956,7 @@ app.post('/api/interview/next', authenticateToken, async (req, res) => {
         const lastEntry = interview.history[interview.history.length - 1];
         lastEntry.answer = answer;
 
-        if (interview.history.length >= interview.totalQuestions) {
+        if (interview.history.length >= interview.totalQuestions + 1) {
             interview.status = 'completed';
             const report = await generateFinalReport(interview);
             interview.report = report;
