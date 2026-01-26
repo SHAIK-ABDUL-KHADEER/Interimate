@@ -244,6 +244,8 @@ nav {
 }
 
 .logo {
+    display: flex;
+    align-items: center;
     font-size: 1.75rem;
     font-weight: 900;
     letter-spacing: -0.05em;
@@ -251,11 +253,18 @@ nav {
     text-transform: uppercase;
     text-shadow: 0 0 10px var(--accent-glow);
     cursor: pointer;
+    white-space: nowrap;
+}
+
+.logo img {
+    height: 32px;
+    width: auto;
+    margin-right: 0.75rem;
 }
 
 .nav-links {
     display: flex;
-    gap: 2rem;
+    gap: 1.5rem;
 }
 
 .nav-btn {
@@ -1527,19 +1536,24 @@ footer {
     background: var(--accent);
 }
 
-/* Global Credits Badge */
+/* Global Stats Container (Stacked) */
+.header-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-left: 1.5rem;
+}
+
 .credits-badge {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    background: rgba(212, 255, 0, 0.1);
-    border: 1px solid var(--accent);
-    padding: 0.4rem 1rem;
-    border-radius: 4px;
+    gap: 0.4rem;
+    background: rgba(212, 255, 0, 0.05);
+    border: 1px solid rgba(212, 255, 0, 0.3);
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
     font-family: var(--font-mono);
-    font-size: 0.75rem;
-    margin-left: 2rem;
-    box-shadow: 0 0 10px rgba(212, 255, 0, 0.1);
+    font-size: 0.6rem;
 }
 
 .credits-badge.hidden {
@@ -1548,13 +1562,25 @@ footer {
 
 .credits-label {
     color: var(--text-secondary);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.05em;
 }
 
 .credits-count {
     color: var(--accent);
-    font-weight: 950;
-    text-shadow: 0 0 10px var(--accent-glow);
+    font-weight: 900;
+}
+
+.badges-count-badge {
+    border-color: rgba(255, 215, 0, 0.3);
+    background: rgba(255, 215, 0, 0.05);
+}
+
+.badges-count-badge .credits-label {
+    color: #ffd700;
+}
+
+.badges-count-badge .credits-count {
+    color: #ffd700;
 }
 
 /* Voice to Text Styles */
