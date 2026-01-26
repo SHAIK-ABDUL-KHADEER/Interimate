@@ -192,8 +192,8 @@ async function getNextInterviewQuestion(interview) {
         CONSTRAINTS:
         - "feedback": STRICTLY 1 LINE. PINPOINT ACCURACY REQUIRED.
         - "question": 1-3 LINES maximum. NO REPEATS of core concepts from: ${JSON.stringify(usedQuestions)}.
-        - QUESTION TYPE: ${canAskCode ? 'Theoretical or Practical Code Writing (Python ONLY, max 2 code total)' : 'THEORETICAL ONLY'}.
-        - LANGUAGE GUARD: If isCodeRequired is true, the question MUST strictly involve Python code, even if the topic is Java-related.
+        - QUESTION TYPE: ${canAskCode ? 'Theoretical or Practical Code Writing (Java ONLY, max 2 code total)' : 'THEORETICAL ONLY'}.
+        - LANGUAGE GUARD: If isCodeRequired is true, the question MUST strictly involve Java code, even if the topic is not Java-specific.
         
         JSON FORMAT ONLY:
         {"question": "str", "isCodeRequired": boolean, "feedback": "Direct evaluation of latest answer"}
@@ -231,8 +231,8 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model) 
         
         RULES:
         - FEEDBACK: STRICTLY 1 LINE. Direct and unique to their specific answer.
-        - QUESTION: Max 3 lines. ${canAskCode ? 'Code writing allowed (STRICTLY Python ONLY, total limit 2).' : 'THEORETICAL only.'}
-        - LANGUAGE GUARD: Any code provided or requested MUST be in Python.
+        - QUESTION: Max 3 lines. ${canAskCode ? 'Code writing allowed (STRICTLY Java ONLY, total limit 2).' : 'THEORETICAL only.'}
+        - LANGUAGE GUARD: Any code provided or requested MUST be in Java.
         
         JSON FORMAT ONLY:
         {"question": "str", "isCodeRequired": boolean, "feedback": "Specific, technical critique of the latest answer."}
