@@ -1,5 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { Question } = require('./models');
+const { Question, Interview } = require('./models');
 
 let genAI = null;
 
@@ -49,7 +49,6 @@ async function getNextInterviewQuestion(interview) {
     const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
 
     const qCount = interview.history.length + 1;
-    let context = "";
 
     // --- UNIVERSAL PROTOCOL: QUESTION #1 is ALWAYS SELF-INTRODUCTION ---
     if (qCount === 1) {
@@ -66,137 +65,127 @@ async function getNextInterviewQuestion(interview) {
         };
     }
 
+    // --- FETCH ALL PREVIOUS HISTORY FOR UNIQUENESS ---
+    const pastInterviews = await Interview.find({
+        username: interview.username,
+        status: 'completed',
+        type: interview.type
+    });
+
+    const pastQuestions = pastInterviews.flatMap(i => i.history.map(h => h.question));
+    const currentSessionQuestions = interview.history.map(h => h.question);
+    const allUsedQuestions = [...new Set([...pastQuestions, ...currentSessionQuestions])];
+
     // Topic Caching Logic (DB Backed)
     if (interview.type === 'topic') {
         try {
             const topics = interview.topics;
-
-            // 1. Calculate budgets per topic
             const n = topics.length;
-            let totalTechQuestions = 15; // Floor for 1-3 topics
+            let totalTechQuestions = 15;
             if (n === 4) totalTechQuestions = 20;
             else if (n === 5) totalTechQuestions = 25;
             else if (n >= 6) totalTechQuestions = 30;
 
-            const n_for_distribution = n;
             let budgets = [];
+            const basePerTopic = Math.floor(totalTechQuestions / n);
+            let remaining = totalTechQuestions % n;
 
-            const basePerTopic = Math.floor(totalTechQuestions / n_for_distribution);
-            let remaining = totalTechQuestions % n_for_distribution;
-
-            for (let i = 0; i < n_for_distribution; i++) {
+            for (let i = 0; i < n; i++) {
                 let t = basePerTopic + (remaining > 0 ? 1 : 0);
                 remaining--;
-                // Rule: 2 cached per 5 questions (40% ratio)
                 let c = Math.floor(t * 0.4);
-                if (c === 0 && t >= 3) c = 1; // Minimum 1 cached if topic has at least 3 questions
+                if (c === 0 && t >= 3) c = 1;
                 budgets.push({ name: topics[i], total: t, cached: c, new: t - c });
             }
 
-            // Adjust qCount for technical question index (tech questions start at qCount 2)
             const techQCount = qCount - 1;
-            if (techQCount > totalTechQuestions) return null; // Should be handled by server, but safety first.
+            if (techQCount > totalTechQuestions) return null;
 
-            // 2. Determine current topic and mode
-            let currentTopic = null, cumulativeTotal = 0, relativeIdx = 0;
+            let currentTopicBudget = null, cumulativeTotal = 0, relativeIdx = 0;
             for (const b of budgets) {
                 if (techQCount <= cumulativeTotal + b.total) {
-                    currentTopic = b;
+                    currentTopicBudget = b;
                     relativeIdx = techQCount - cumulativeTotal;
                     break;
                 }
                 cumulativeTotal += b.total;
             }
 
-            // 3. Mode decision: DB Cache check (with duplicate prevention)
-            const topicCache = await Question.find({ category: currentTopic.name, type: 'interview_cache' });
+            if (currentTopicBudget) {
+                const topicCache = await Question.find({ category: currentTopicBudget.name, type: 'interview_cache' });
 
-            // Fetch all previous history for this topic to ensure cross-interview uniqueness
-            const pastInterviews = await Interview.find({
-                username: interview.username,
-                status: 'completed',
-                topics: currentTopic.name
-            });
-
-            const pastQuestions = pastInterviews.flatMap(i => i.history.map(h => h.question));
-            const currentSessionQuestions = interview.history.map(h => h.question);
-            const allUsedQuestions = [...new Set([...pastQuestions, ...currentSessionQuestions])];
-
-            // Filter out already used questions and stale/invalid content (Python/Architecture)
-            const availableCache = topicCache.filter(q => {
-                const qText = q.data.question.toLowerCase();
-                const isAlreadyUsed = allUsedQuestions.includes(q.data.question);
-                const isInvalid = qText.includes('python') ||
-                    (currentTopic.name === 'selenium' && (qText.includes('architecture') || qText.includes('json wire') || qText.includes('w3c protocol')));
-
-                return !isAlreadyUsed && !isInvalid;
-            });
-
-            if (relativeIdx <= currentTopic.cached && availableCache.length > 0) {
-                const randomIndex = Math.floor(Math.random() * availableCache.length);
-                const cachedQ = availableCache[randomIndex].data;
-                const lastInteraction = interview.history[interview.history.length - 1];
-
-                // Generate dynamic feedback even for cached questions (only if there was a previous technical question)
-                let dynamicFeedback = `Acknowledged. Moving on with ${currentTopic.name}...`;
-                if (qCount > 2) {
-                    try {
-                        const feedbackPrompt = `
-                            System: Technical Interview Evaluator for ${currentTopic.name}.
-                            TASK: Critically evaluate the Candidate's latest answer.
-                            CONTEXT:
-                            Q: ${lastInteraction.question}
-                            A: ${lastInteraction.answer || '[ NO RESPONSE ]'}
-                            CONSTRAINT: Provide STRICTLY 1 LINE of technical feedback. Direct and pinpoint accurate. STRICTLY NO ARCHITECTURE (no talk of WebDriver internal components, hierarchy, or protocols).
-                            RESPONSE: Text only.
-                        `;
-                        const fbResult = await model.generateContent(feedbackPrompt);
-                        dynamicFeedback = (await fbResult.response).text().trim();
-                    } catch (fbErr) {
-                        console.error("[InterviewService] Feedback Generation Error:", fbErr.message);
-                    }
-                }
-
-                return {
-                    ...cachedQ,
-                    feedback: dynamicFeedback
-                };
-            }
-
-            // Escalation to Gemini
-            const result = await generateTopicQuestionWithGemini(interview, currentTopic.name, qCount, model, allUsedQuestions);
-
-            // Save to DB Cache for future sessions (with duplicate prevention)
-            if (result && result.question) {
-                const exists = await Question.findOne({
-                    category: currentTopic.name,
-                    type: 'interview_cache',
-                    'data.question': result.question
+                const availableCache = topicCache.filter(q => {
+                    const qText = q.data.question.toLowerCase();
+                    const isAlreadyUsed = allUsedQuestions.includes(q.data.question);
+                    const isInvalid = qText.includes('python') ||
+                        (currentTopicBudget.name === 'selenium' && (qText.includes('architecture') || qText.includes('json wire') || qText.includes('w3c protocol')));
+                    return !isAlreadyUsed && !isInvalid;
                 });
 
-                if (!exists) {
-                    await Question.create({
-                        category: currentTopic.name,
+                if (relativeIdx <= currentTopicBudget.cached && availableCache.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * availableCache.length);
+                    const cachedQ = availableCache[randomIndex].data;
+                    const lastInteraction = interview.history[interview.history.length - 1];
+
+                    let dynamicFeedback = `Acknowledged. Moving on with ${currentTopicBudget.name}...`;
+                    if (qCount > 2) {
+                        try {
+                            const feedbackPrompt = `
+                                System: Technical Interview Evaluator for ${currentTopicBudget.name}.
+                                TASK: Critically evaluate the Candidate's latest answer.
+                                CONTEXT:
+                                Q: ${lastInteraction.question}
+                                A: ${lastInteraction.answer || '[ NO RESPONSE ]'}
+                                CONSTRAINT: Provide STRICTLY 1 LINE of technical feedback. Direct and pinpoint accurate. STRICTLY NO ARCHITECTURE (no talk of WebDriver internal components, hierarchy, or protocols).
+                                RESPONSE: Text only.
+                            `;
+                            const fbResult = await model.generateContent(feedbackPrompt);
+                            dynamicFeedback = (await fbResult.response).text().trim();
+                        } catch (fbErr) {
+                            console.error("[InterviewService] Feedback Generation Error:", fbErr.message);
+                        }
+                    }
+
+                    return {
+                        ...cachedQ,
+                        feedback: dynamicFeedback
+                    };
+                }
+
+                // Escalation to Gemini
+                const result = await generateTopicQuestionWithGemini(interview, currentTopicBudget.name, qCount, model, allUsedQuestions);
+
+                // Save to DB Cache
+                if (result && result.question) {
+                    const exists = await Question.findOne({
+                        category: currentTopicBudget.name,
                         type: 'interview_cache',
-                        id: Date.now(), // Use timestamp for unique id in cache
-                        data: { question: result.question, isCodeRequired: result.isCodeRequired }
+                        'data.question': result.question
                     });
 
-                    // Trim cache if > 50
-                    const count = await Question.countDocuments({ category: currentTopic.name, type: 'interview_cache' });
-                    if (count > 50) {
-                        const oldest = await Question.findOne({ category: currentTopic.name, type: 'interview_cache' }).sort({ createdAt: 1 });
-                        if (oldest) await Question.findByIdAndDelete(oldest._id);
+                    if (!exists) {
+                        await Question.create({
+                            category: currentTopicBudget.name,
+                            type: 'interview_cache',
+                            id: Date.now(),
+                            data: { question: result.question, isCodeRequired: result.isCodeRequired }
+                        });
+                        const count = await Question.countDocuments({ category: currentTopicBudget.name, type: 'interview_cache' });
+                        if (count > 50) {
+                            const oldest = await Question.findOne({ category: currentTopicBudget.name, type: 'interview_cache' }).sort({ createdAt: 1 });
+                            if (oldest) await Question.findByIdAndDelete(oldest._id);
+                        }
                     }
                 }
+                return result;
             }
-            return result;
         } catch (err) {
             console.error("[InterviewService] DB Cache Error:", err.message);
         }
     }
 
-    // Fallback for Resume-based or Cache failures
+    // --- RESUME OR FALLBACK LOGIC ---
+    let context = "";
     if (interview.type === 'role-resume') {
         context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} for the specific role of: "${interview.targetRole}".
         Evaluation Context: You must weigh their Resume history against the requirements of the "${interview.targetRole}" position.
@@ -208,11 +197,10 @@ async function getNextInterviewQuestion(interview) {
         context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} on topics: ${interview.topics.join(', ')}.`;
     }
 
-    const usedQuestions = interview.history.map(h => h.question);
     const codeCount = interview.history.filter(h => h.isCodeRequired).length;
     const canAskCode = codeCount < 2;
-
     const lastInteraction = interview.history[interview.history.length - 1];
+
     const prompt = `
         ${context}
         Current Session Status: Question #${qCount} out of ${interview.totalQuestions}.
@@ -223,21 +211,19 @@ async function getNextInterviewQuestion(interview) {
         Candidate: ${lastInteraction.answer || '[ NO RESPONSE PROVIDED ]'}
 
         TASK:
-        1. PINPOINT EVALUATION: In the "feedback" field, provide a direct, critical response to the Candidate's LATEST answer. 
-        - STICK TO THE SYLLABUS: STRICTLY NO ARCHITECTURAL CONCEPTS (no talk of WebDriver internal components, hierarchy, protocols, or browser engines). Focus on Locators and functional automation.
-        - UNIQUENESS: Ensure feedback is unique and directly addresses the specific technical gap in their latest response.
+        1. PINPOINT EVALUATION: In the "feedback" field, provide a direct, critical response to the Candidate's LATEST answer (1 line). 
+        - STICK TO THE TOPIC: Focus only on relevant technical accuracy. STRICTLY NO ARCHITECTURE talk.
+        - UNIQUENESS: Ensure feedback is unique and directly addresses the specific technical gap.
         2. ASK THE NEXT QUESTION: Generate a unique, challenging technical follow-up.
-        
+
         CONSTRAINTS:
-        - "feedback": STRICTLY 1 LINE. PINPOINT ACCURACY REQUIRED.
-        - "question": 1-3 LINES maximum. UNQIUENESS: Do not repeat or closely mirror concepts from: ${JSON.stringify(allUsedQuestions.slice(-15))}.
-        - TOPIC ADHERENCE: Strictly stay within the subtopic: ${subtopic}. 
-        - NO ARCHITECTURE: If topic is Selenium, strictly NO talk of WebDriver hierarchy, protocols, or internals.
-        - QUESTION TYPE: ${canAskCode ? 'Theoretical or Practical Code Writing (Java ONLY, max 2 code total)' : 'THEORETICAL ONLY'}.
+        - "feedback": STRICTLY 1 LINE.
+        - "question": 1-3 LINES maximum. UNIQUE: Do not repeat concepts from: ${JSON.stringify(allUsedQuestions.slice(-15))}.
+        - QUESTION TYPE: ${canAskCode ? 'Theoretical or Practical Code Writing (Java ONLY, max 2 total)' : '理论 Theoretical ONLY'}.
         - LANGUAGE GUARD: If isCodeRequired is true, the question MUST strictly involve Java code. NEVER use Python.
         
         JSON FORMAT ONLY:
-        {"question": "str", "isCodeRequired": boolean, "feedback": "Direct evaluation of latest answer"}
+        {"question": "str", "isCodeRequired": boolean, "feedback": "Direct evaluation"}
     `;
 
     try {
@@ -252,32 +238,32 @@ async function getNextInterviewQuestion(interview) {
 
 async function generateTopicQuestionWithGemini(interview, topic, qCount, model, allUsedQuestions = []) {
     try {
-        const currentTopic = topicBlueprint[topic] || topicBlueprint['java'];
+        const blueprint = checkpointBlueprint[topic] || checkpointBlueprint['java'];
         const checkpoint = blueprint.find(c => qCount >= c.range[0] && qCount <= c.range[1]) || { subtopic: topic, difficulty: 'Intermediate' };
-        const usedQuestions = interview.history.map(h => h.question);
+
         const codeCount = interview.history.filter(h => h.isCodeRequired).length;
         const canAskCode = codeCount < 2;
-
         const lastInteraction = interview.history[interview.history.length - 1];
+
         const prompt = `
         System: High-Precision Technical Interviewer for ${topic}.
         Sub-topic Target: ${checkpoint.subtopic}.
         
-        LATEST INTERACTION FOR INDEBT EVALUATION:
+        LATEST INTERACTION FOR INDEPTH EVALUATION:
         Q: ${lastInteraction.question}
         A: ${lastInteraction.answer || '[ NO RESPONSE ]'}
 
         TASK:
-        1. PINPOINT FEEDBACK: In the "feedback" field, critically evaluate the A (Answer) above. STICK TO THE SYLLABUS target: ${checkpoint.subtopic}. Do not go deeper than the defined difficulty: ${checkpoint.difficulty}.
-        2. UNIQUE NEXT Q: Generate a new question for ${checkpoint.subtopic}. NO CONCEPTUAL REPEATS of: ${JSON.stringify(usedQuestions)}.
+        1. PINPOINT FEEDBACK: In the "feedback" field, critically evaluate the A (Answer) above (1 line). STICK TO THE SYLLABUS target: ${checkpoint.subtopic}.
+        2. UNIQUE NEXT Q: Generate a new question for ${checkpoint.subtopic}. NO CONCEPTUAL REPEATS of: ${JSON.stringify(allUsedQuestions.slice(-15))}.
         
         RULES:
-        - FEEDBACK: STRICTLY 1 LINE. Direct and unique to their specific answer.
+        - FEEDBACK: STRICTLY 1 LINE. Direct and unique.
         - QUESTION: Max 3 lines. ${canAskCode ? 'Code writing allowed (STRICTLY Java ONLY, total limit 2).' : 'THEORETICAL only.'}
         - LANGUAGE GUARD: Any code provided or requested MUST be in Java. ABSOLUTELY NO PYTHON.
         
         JSON FORMAT ONLY:
-        {"question": "str", "isCodeRequired": boolean, "feedback": "Specific, technical critique of the latest answer."}
+        {"question": "str", "isCodeRequired": boolean, "feedback": "Specific technical critique."}
     `;
         const result = await model.generateContent(prompt);
         let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");
@@ -293,26 +279,16 @@ async function generateFinalReport(interview) {
     const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
 
     const prompt = `
-        You are a Senior Technical Recruiter and Tech Lead. Evaluate this candidate with absolute accuracy based on their 10-question interview session.
-        Candidate Name: ${interview.interviewerName}
-        Topics/Context: ${interview.type === 'topic' ? interview.topics.join(', ') : (interview.type === 'role-resume' ? `Role: ${interview.targetRole} + Resume` : 'Resume Based')}
-        
-        Full Interview Transcript:
-        ${interview.history.map((h, i) => `
-        Q${i + 1}: ${h.question}
-        User Answer: ${h.answer || '[ NO RESPONSE PROVIDED ]'}
-        `).join('\n')}
+        You are a Senior Technical Recruiter and Tech Lead. Evaluate this candidate with absolute accuracy based on their interview session.
+        Topics: ${interview.topics.join(', ')}
+        Transcript: ${JSON.stringify(interview.history)}
 
-        Task: Provide a high-fidelity assessment.
-        - SCORING: Be highly critical. Only a perfect, industry-ready candidate gets a 9 or 10.
-        - IRRELEVANT CONTENT: If the candidate provided irrelevant, non-technical, or "placeholder" answers (like "asdf" or "I don't know"), penalize their score HEAVILY and note it in the improvements.
-        - RAG STATUS:
-            - Green: Ready for immediate deployment (Score 8-10)
-            - Amber: High potential, needs specific training (Score 5-7)
-            - Red: Not currently suitable (Score 1-4)
+        Task: Provide assessment.
+        - SCORING (1-10): Be highly critical.
+        - RAG: Green (8-10), Amber (5-7), Red (1-4).
         
         JSON FORMAT ONLY:
-        { "strengths": ["str"], "improvements": ["str"], "score": number (1-10), "summary": "str" }
+        { "strengths": ["str"], "improvements": ["str"], "score": number, "summary": "str" }
     `;
 
     try {
@@ -320,7 +296,6 @@ async function generateFinalReport(interview) {
         let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");
         const report = JSON.parse(text);
 
-        // Add RAG Status Logic
         if (report.score >= 8) report.rag = 'Green';
         else if (report.score >= 5) report.rag = 'Amber';
         else report.rag = 'Red';
