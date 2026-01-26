@@ -18,7 +18,7 @@ const checkpointBlueprint = {
         { range: [16, 35], subtopic: 'XPath & CSS Selector Strategies', difficulty: 'Intermediate' },
         { range: [36, 55], subtopic: 'Synchronization & Waits (Implicit, Explicit)', difficulty: 'Intermediate' },
         { range: [56, 75], subtopic: 'Interacting with Elements (Alerts, Frames, Windows)', difficulty: 'Advanced' },
-        { range: [76, 100], subtopic: 'POM (Page Object Model) Basics', difficulty: 'Expert' }
+        { range: [76, 100], subtopic: 'POM (Page Object Model) Implementation', difficulty: 'Specialist' }
     ],
     'sql': [
         { range: [1, 15], subtopic: 'DDL/DML bedrock fundamentals', difficulty: 'Absolute Beginner' },
@@ -118,9 +118,31 @@ async function getNextInterviewQuestion(interview) {
             if (relativeIdx <= currentTopic.cached && availableCache.length > 0) {
                 const randomIndex = Math.floor(Math.random() * availableCache.length);
                 const cachedQ = availableCache[randomIndex].data;
+                const lastInteraction = interview.history[interview.history.length - 1];
+
+                // Generate dynamic feedback even for cached questions (only if there was a previous technical question)
+                let dynamicFeedback = `Acknowledged. Moving on with ${currentTopic.name}...`;
+                if (qCount > 2) {
+                    try {
+                        const feedbackPrompt = `
+                            System: Technical Interview Evaluator for ${currentTopic.name}.
+                            TASK: Critically evaluate the Candidate's latest answer.
+                            CONTEXT:
+                            Q: ${lastInteraction.question}
+                            A: ${lastInteraction.answer || '[ NO RESPONSE ]'}
+                            CONSTRAINT: Provide STRICTLY 1 LINE of technical feedback. Direct and pinpoint accurate. STRICTLY NO ARCHITECTURE (no talk of WebDriver internal components, hierarchy, or protocols).
+                            RESPONSE: Text only.
+                        `;
+                        const fbResult = await model.generateContent(feedbackPrompt);
+                        dynamicFeedback = (await fbResult.response).text().trim();
+                    } catch (fbErr) {
+                        console.error("[InterviewService] Feedback Generation Error:", fbErr.message);
+                    }
+                }
+
                 return {
                     ...cachedQ,
-                    feedback: `Acknowledged. Moving on with ${currentTopic.name}...`
+                    feedback: dynamicFeedback
                 };
             }
 
@@ -185,7 +207,7 @@ async function getNextInterviewQuestion(interview) {
 
         TASK:
         1. PINPOINT EVALUATION: In the "feedback" field, provide a direct, critical response to the Candidate's LATEST answer. 
-        - STICK TO THE SYLLABUS: Do not deviate into deep architectural concepts unless explicitly in the blueprint.
+        - STICK TO THE SYLLABUS: STRICTLY NO ARCHITECTURAL CONCEPTS (no talk of WebDriver internal components, hierarchy, protocols, or browser engines). Focus on Locators and functional automation.
         - UNIQUENESS: Ensure feedback is unique and directly addresses the specific technical gap in their latest response.
         2. ASK THE NEXT QUESTION: Generate a unique, challenging technical follow-up.
         
