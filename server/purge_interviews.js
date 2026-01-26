@@ -4,23 +4,25 @@ const mongoose = require('mongoose');
 const { Interview, Question } = require('./models');
 
 async function purgeInterviews() {
-    console.log('--- [INTERIMATE] DATA PURGE PROTOCOL: INTERVIEWS ---');
+    console.log('--- [INTERIMATE] DATA PURGE PROTOCOL ---');
 
-    if (!process.env.MONGODB_URI) {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
         console.error('ERROR: MONGODB_URI not found in .env');
         process.exit(1);
     }
 
-    try {
-        console.log('[1/3] Connecting to Sigma Cloud Cluster...');
-        await mongoose.connect(process.env.MONGODB_URI);
-        console.log('      -> Connection Established.');
+    console.log(`Connecting to: ${uri.replace(/\/\/.*@/, '//****:****@')}`);
 
-        console.log('[2/3] Terminating all Interview Sessions...');
+    try {
+        await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+        console.log('--- [SUCCESS] DATABASE CONNECTED ---');
+
+        console.log('[1/2] Terminating all Interview Sessions...');
         const intResult = await Interview.deleteMany({});
         console.log(`      -> Deleted ${intResult.deletedCount} interview records.`);
 
-        console.log('[3/3] Pursuing Interview Cache Deletion...');
+        console.log('[2/2] Pursuing Interview Cache Deletion...');
         const cacheResult = await Question.deleteMany({ type: 'interview_cache' });
         console.log(`      -> Deleted ${cacheResult.deletedCount} cached questions.`);
 
@@ -31,7 +33,9 @@ async function purgeInterviews() {
         await mongoose.disconnect();
         process.exit(0);
     } catch (error) {
-        console.error('CRITICAL ERROR during purge:', error.message);
+        console.error('--- [CRITICAL ERROR] ---');
+        console.error(error.message);
+        console.log('TIP: Ensure your MongoDB server is RUNNING before executing this script.');
         process.exit(1);
     }
 }
