@@ -199,7 +199,10 @@ async function getNextInterviewQuestion(interview) {
     }
 
     const codeCount = interview.history.filter(h => h.isCodeRequired).length;
-    const canAskCode = codeCount < 2;
+    const techQCount = qCount - 1;
+    const isCodeMilestone = (techQCount === 5 || techQCount === 9);
+    const canAskCode = codeCount < 2 && isCodeMilestone;
+
     const lastInteraction = interview.history[interview.history.length - 1];
 
     const prompt = `
@@ -214,18 +217,17 @@ async function getNextInterviewQuestion(interview) {
         TASK:
         1. PINPOINT EVALUATION: In the "feedback" field, provide a direct, critical (1 line). 
         - STICK TO THE TOPIC: Focus only on technical accuracy. NO ARCHITECTURE.
-        - UNIQUENESS: Ensure feedback addresses the specific technical gap.
         2. ASK THE NEXT QUESTION: Generate a unique, APPROACHABLE follow-up.
 
         CONSTRAINTS:
-        - DIFFICULTY: BASIC to INTERMEDIATE ONLY. Avoid advanced internals/experts topics.
+        - MODE: ${canAskCode ? 'PRACTICAL JAVA CODE CHALLENGE (Intermediate).' : 'STRICT CONCEPTUAL THEORY ONLY (No code).'}
+        - DIFFICULTY: BASIC to INTERMEDIATE ONLY.
         - "feedback": STRICTLY 1 LINE.
         - "question": STRICTLY LESS THAN 3 LINES. UNIQUE: Do not repeat: ${JSON.stringify(allUsedQuestions.slice(-15))}.
-        - QUESTION TYPE: ${canAskCode ? 'Practical Java Code (BASIC ONLY, max 2 total)' : 'Theoretical ONLY'}.
-        - LANGUAGE GUARD: Strictly Java code. NEVER use Python.
+        - LANGUAGE GUARD: Strictly Java code only (if asked). NEVER use Python.
         
         JSON FORMAT ONLY:
-        {"question": "str", "isCodeRequired": boolean, "feedback": "Direct evaluation"}
+        {"question": "str", "isCodeRequired": ${canAskCode}, "feedback": "Direct evaluation"}
     `;
 
     try {
@@ -244,7 +246,10 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model, 
         const checkpoint = blueprint.find(c => qCount >= c.range[0] && qCount <= c.range[1]) || { subtopic: topic, difficulty: 'Intermediate' };
 
         const codeCount = interview.history.filter(h => h.isCodeRequired).length;
-        const canAskCode = codeCount < 2;
+        const techQCount = qCount - 1;
+        const isCodeMilestone = (techQCount === 5 || techQCount === 9);
+        const canAskCode = codeCount < 2 && isCodeMilestone;
+
         const lastInteraction = interview.history[interview.history.length - 1];
 
         const prompt = `
@@ -260,13 +265,14 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model, 
         2. UNIQUE NEXT Q: Generate an APPROACHABLE question for ${checkpoint.subtopic}.
         
         RULES:
+        - MODE: ${canAskCode ? 'PRACTICAL JAVA CODE CHALLENGE (Intermediate).' : 'STRICT CONCEPTUAL THEORY ONLY (No code).'}
         - DIFFICULTY: BASIC to INTERMEDIATE ONLY. No deep internals.
         - FEEDBACK: STRICTLY 1 LINE.
         - QUESTION: STRICTLY LESS THAN 3 LINES. NO CONCEPTUAL REPEATS of: ${JSON.stringify(allUsedQuestions.slice(-15))}.
-        - LANGUAGE GUARD: Strictly Java code only. ABSOLUTELY NO PYTHON.
+        - LANGUAGE GUARD: Strictly Java code only (if asked). ABSOLUTELY NO PYTHON.
         
         JSON FORMAT ONLY:
-        {"question": "str", "isCodeRequired": boolean, "feedback": "Specific technical critique."}
+        {"question": "str", "isCodeRequired": ${canAskCode}, "feedback": "Specific technical critique."}
     `;
         const result = await model.generateContent(prompt);
         let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");
