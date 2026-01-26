@@ -14,11 +14,11 @@ const checkpointBlueprint = {
         { range: [86, 100], subtopic: 'Java 8 & Data Structures', difficulty: 'Expert' }
     ],
     'selenium': [
-        { range: [1, 15], subtopic: 'Architecture & ID/XPath Basics', difficulty: 'Absolute Beginner' },
-        { range: [16, 35], subtopic: 'Dynamic XPath & CSS Selectors', difficulty: 'Intermediate' },
-        { range: [36, 55], subtopic: 'Synchronization & Logic Waits', difficulty: 'Intermediate' },
-        { range: [56, 75], subtopic: 'Actions, JSExecutor & Shadow DOM', difficulty: 'Advanced' },
-        { range: [76, 100], subtopic: 'POM and Page Factory frameworks', difficulty: 'Expert' }
+        { range: [1, 15], subtopic: 'Locators (ID, Name, ClassName, LinkText)', difficulty: 'Absolute Beginner' },
+        { range: [16, 35], subtopic: 'XPath & CSS Selector Strategies', difficulty: 'Intermediate' },
+        { range: [36, 55], subtopic: 'Synchronization & Waits (Implicit, Explicit)', difficulty: 'Intermediate' },
+        { range: [56, 75], subtopic: 'Interacting with Elements (Alerts, Frames, Windows)', difficulty: 'Advanced' },
+        { range: [76, 100], subtopic: 'POM (Page Object Model) Basics', difficulty: 'Expert' }
     ],
     'sql': [
         { range: [1, 15], subtopic: 'DDL/DML bedrock fundamentals', difficulty: 'Absolute Beginner' },
@@ -171,7 +171,7 @@ async function getNextInterviewQuestion(interview) {
 
     const usedQuestions = interview.history.map(h => h.question);
     const codeCount = interview.history.filter(h => h.isCodeRequired).length;
-    const canAskCode = codeCount < 3;
+    const canAskCode = codeCount < 2;
 
     const lastInteraction = interview.history[interview.history.length - 1];
     const prompt = `
@@ -184,15 +184,16 @@ async function getNextInterviewQuestion(interview) {
         Candidate: ${lastInteraction.answer || '[ NO RESPONSE PROVIDED ]'}
 
         TASK:
-        1. CRITICAL APPRAISAL: In the "feedback" field, provide a direct, critical, and session-aware response to the Candidate's LATEST answer specifically. 
-        - If the answer was weak, generic, or incorrect, highlight the gap (e.g., "While you mentioned X, you missed the critical role of Y in this architecture...").
-        - If it was irrelevant, state it firmly: "That response doesn't address the technical implementation of X."
+        1. PINPOINT EVALUATION: In the "feedback" field, provide a direct, critical response to the Candidate's LATEST answer. 
+        - STICK TO THE SYLLABUS: Do not deviate into deep architectural concepts unless explicitly in the blueprint.
+        - UNIQUENESS: Ensure feedback is unique and directly addresses the specific technical gap in their latest response.
         2. ASK THE NEXT QUESTION: Generate a unique, challenging technical follow-up.
         
         CONSTRAINTS:
-        - "feedback": 1-2 LINES maximum. PINPOINT ACCURACY REQUIRED.
+        - "feedback": STRICTLY 1 LINE. PINPOINT ACCURACY REQUIRED.
         - "question": 1-3 LINES maximum. NO REPEATS of core concepts from: ${JSON.stringify(usedQuestions)}.
-        - QUESTION TYPE: ${canAskCode ? 'Theoretical or Code (max 3 code total)' : 'THEORETICAL ONLY'}.
+        - QUESTION TYPE: ${canAskCode ? 'Theoretical or Practical Code Writing (Python ONLY, max 2 code total)' : 'THEORETICAL ONLY'}.
+        - LANGUAGE GUARD: If isCodeRequired is true, the question MUST strictly involve Python code, even if the topic is Java-related.
         
         JSON FORMAT ONLY:
         {"question": "str", "isCodeRequired": boolean, "feedback": "Direct evaluation of latest answer"}
@@ -213,7 +214,7 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model) 
     const checkpoint = blueprint.find(c => qCount >= c.range[0] && qCount <= c.range[1]) || { subtopic: topic, difficulty: 'Intermediate' };
     const usedQuestions = interview.history.map(h => h.question);
     const codeCount = interview.history.filter(h => h.isCodeRequired).length;
-    const canAskCode = codeCount < 3;
+    const canAskCode = codeCount < 2;
 
     const lastInteraction = interview.history[interview.history.length - 1];
     const prompt = `
@@ -225,12 +226,13 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model) 
         A: ${lastInteraction.answer || '[ NO RESPONSE ]'}
 
         TASK:
-        1. PINPOINT FEEDBACK: In the "feedback" field, critically evaluate the A (Answer) above. Do not be generic. If the candidate missed a nuance (e.g., synchronization in Collections), point it out specifically.
+        1. PINPOINT FEEDBACK: In the "feedback" field, critically evaluate the A (Answer) above. STICK TO THE SYLLABUS target: ${checkpoint.subtopic}. Do not go deeper than the defined difficulty: ${checkpoint.difficulty}.
         2. UNIQUE NEXT Q: Generate a new question for ${checkpoint.subtopic}. NO CONCEPTUAL REPEATS of: ${JSON.stringify(usedQuestions)}.
         
         RULES:
-        - FEEDBACK: Max 2 lines. Direct and critical.
-        - QUESTION: Max 3 lines. ${canAskCode ? 'Code writing allowed (total limit 3).' : 'THEORETICAL only.'}
+        - FEEDBACK: STRICTLY 1 LINE. Direct and unique to their specific answer.
+        - QUESTION: Max 3 lines. ${canAskCode ? 'Code writing allowed (STRICTLY Python ONLY, total limit 2).' : 'THEORETICAL only.'}
+        - LANGUAGE GUARD: Any code provided or requested MUST be in Python.
         
         JSON FORMAT ONLY:
         {"question": "str", "isCodeRequired": boolean, "feedback": "Specific, technical critique of the latest answer."}

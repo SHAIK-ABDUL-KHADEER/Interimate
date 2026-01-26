@@ -42,6 +42,8 @@ textarea,
 .landing-card {
     cursor: none !important;
     /* Force hide on interactive elements */
+    pointer-events: auto;
+    /* Ensure they are clickable */
 }
 
 /* Custom Cursor */
@@ -500,6 +502,19 @@ pre code {
 .btn-primary:hover {
     box-shadow: 0 0 20px var(--accent-glow);
     transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(1px);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.btn-primary:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed !important;
+    box-shadow: none;
+    transform: none;
 }
 
 .btn-secondary {
@@ -2009,5 +2024,28 @@ body.loading-active::after {
     z-index: 10000;
     backdrop-filter: blur(5px);
     pointer-events: none;
-    /* Crucial: Allow clicks if it's just a visual overlay, but usually we want to block interaction during heavy loads. Let's block here if we want but the user said "unable to click" was an issue, so if I had this before it might have been blocking. But I didn't have it before. */
+    /* Crucial: Allow clicks to pass through if something is underneath */
+    animation: pulseText 2s infinite;
+}
+
+@keyframes pulseText {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Ensure buttons are reachable */
+.btn-primary,
+.btn-secondary,
+.nav-btn,
+.option-btn,
+.mic-btn {
+    position: relative;
+    z-index: 10;
 }

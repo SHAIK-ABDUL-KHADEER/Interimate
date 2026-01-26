@@ -1742,6 +1742,8 @@ const App = {
         if (this.isListening) {
             this.stopMic();
         } else {
+            // Cancel TTS immediately when starting voice input to prevent echoes
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             this.startMic();
         }
     },
