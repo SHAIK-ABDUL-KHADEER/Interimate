@@ -5,42 +5,42 @@ let genAI = null;
 
 const checkpointBlueprint = {
     'java': [
-        { range: [1, 10], subtopic: 'Bedrock Syntax & Logic', difficulty: 'Beginner' },
-        { range: [11, 25], subtopic: 'OOP Basics & Methods', difficulty: 'Beginner' },
-        { range: [26, 40], subtopic: 'Advanced OOP & Interfaces', difficulty: 'Intermediate' },
-        { range: [41, 55], subtopic: 'Memory, GC & Constructors', difficulty: 'Intermediate' },
-        { range: [56, 70], subtopic: 'Exception Handling Protocol', difficulty: 'Intermediate' },
-        { range: [71, 85], subtopic: 'Collections Framework Mastery', difficulty: 'Intermediate' },
-        { range: [86, 100], subtopic: 'Java 8 & Data Structures', difficulty: 'Intermediate' }
+        'Bedrock Syntax & Logic',
+        'OOP Basics & Methods',
+        'Advanced OOP & Interfaces',
+        'Memory, GC & Constructors',
+        'Exception Handling Protocol',
+        'Collections Framework Mastery',
+        'Java 8 & Data Structures'
     ],
     'selenium': [
-        { range: [1, 15], subtopic: 'Locators (ID, Name, ClassName, LinkText)', difficulty: 'Beginner' },
-        { range: [16, 35], subtopic: 'XPath & CSS Selector Strategies', difficulty: 'Intermediate' },
-        { range: [36, 55], subtopic: 'Synchronization & Waits (Implicit, Explicit)', difficulty: 'Intermediate' },
-        { range: [56, 75], subtopic: 'Interacting with Elements (Alerts, Frames, Windows)', difficulty: 'Intermediate' },
-        { range: [76, 100], subtopic: 'POM (Page Object Model) Implementation', difficulty: 'Intermediate' }
+        'Locators (ID, Name, ClassName, LinkText)',
+        'XPath & CSS Selector Strategies',
+        'Synchronization & Waits (Implicit, Explicit)',
+        'Interacting with Elements (Alerts, Frames, Windows)',
+        'POM (Page Object Model) Implementation'
     ],
     'sql': [
-        { range: [1, 15], subtopic: 'DDL/DML bedrock fundamentals', difficulty: 'Beginner' },
-        { range: [16, 35], subtopic: 'Keys, Constraints & Filters', difficulty: 'Intermediate' },
-        { range: [36, 60], subtopic: 'Complex Relational Joins', difficulty: 'Intermediate' },
-        { range: [61, 80], subtopic: 'Subqueries & Nth Salary logic', difficulty: 'Intermediate' },
-        { range: [81, 100], subtopic: 'JDBC & Transaction Protocols', difficulty: 'Intermediate' }
+        'DDL/DML bedrock fundamentals',
+        'Keys, Constraints & Filters',
+        'Complex Relational Joins',
+        'Subqueries & Nth Salary logic',
+        'JDBC & Transaction Protocols'
     ],
     'functional': [
-        { range: [1, 25], subtopic: 'SDLC/STLC Lifecycle models', difficulty: 'Beginner' },
-        { range: [26, 50], subtopic: 'Testing Types & Levels', difficulty: 'Intermediate' },
-        { range: [51, 75], subtopic: 'Defect Management Lifecycle', difficulty: 'Intermediate' },
-        { range: [76, 100], subtopic: 'UAT & Agile Methodologies', difficulty: 'Intermediate' }
+        'SDLC/STLC Lifecycle models',
+        'Testing Types & Levels',
+        'Defect Management Lifecycle',
+        'UAT & Agile Methodologies'
     ],
     'testng': [
-        { range: [1, 20], subtopic: 'Annotations and priority systems', difficulty: 'Beginner' },
-        { range: [21, 40], subtopic: 'Assertions & Grouping XML', difficulty: 'Intermediate' },
-        { range: [41, 60], subtopic: 'Parallelism & DataProviders', difficulty: 'Intermediate' }
+        'Annotations and priority systems',
+        'Assertions & Grouping XML',
+        'Parallelism & DataProviders'
     ],
     'poi': [
-        { range: [1, 25], subtopic: 'Workbook and Sheet operations', difficulty: 'Intermediate' },
-        { range: [26, 50], subtopic: 'Data-Driven Framework logic', difficulty: 'Intermediate' }
+        'Workbook and Sheet operations',
+        'Data-Driven Framework logic'
     ]
 };
 
@@ -242,8 +242,7 @@ async function getNextInterviewQuestion(interview) {
 
 async function generateTopicQuestionWithGemini(interview, topic, qCount, model, allUsedQuestions = []) {
     try {
-        const blueprint = checkpointBlueprint[topic] || checkpointBlueprint['java'];
-        const checkpoint = blueprint.find(c => qCount >= c.range[0] && qCount <= c.range[1]) || { subtopic: topic, difficulty: 'Intermediate' };
+        const syllabus = checkpointBlueprint[topic] || checkpointBlueprint['java'];
 
         const codeCount = interview.history.filter(h => h.isCodeRequired).length;
         const techQCount = qCount - 1;
@@ -254,15 +253,15 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model, 
 
         const prompt = `
         System: High-Precision Technical Interviewer for ${topic}.
-        Sub-topic Target: ${checkpoint.subtopic}.
+        CORE SYLLABUS: ${syllabus.join(', ')}.
         
         LATEST INTERACTION FOR INDEPTH EVALUATION:
         Q: ${lastInteraction.question}
         A: ${lastInteraction.answer || '[ NO RESPONSE ]'}
 
         TASK:
-        1. PINPOINT FEEDBACK: critically evaluate the A (Answer) above (1 line). STICK TO THE SYLLABUS: ${checkpoint.subtopic}.
-        2. UNIQUE NEXT Q: Generate an APPROACHABLE question for ${checkpoint.subtopic}.
+        1. PINPOINT FEEDBACK: critically evaluate the A (Answer) above (1 line).
+        2. UNIQUE NEXT Q: Generate an APPROACHABLE question from any concept in the CORE SYLLABUS above.
         
         RULES:
         - MODE: ${canAskCode ? 'PRACTICAL JAVA CODE CHALLENGE (Intermediate).' : 'STRICT CONCEPTUAL THEORY ONLY (No code).'}
