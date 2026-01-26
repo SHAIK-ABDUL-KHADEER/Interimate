@@ -110,10 +110,27 @@ async function getNextInterviewQuestion(interview) {
 
             // 3. Mode decision: DB Cache check (with duplicate prevention)
             const topicCache = await Question.find({ category: currentTopic.name, type: 'interview_cache' });
-            const usedQuestions = interview.history.map(h => h.question);
 
-            // Filter out already used questions from cache
-            const availableCache = topicCache.filter(q => !usedQuestions.includes(q.data.question));
+            // Fetch all previous history for this topic to ensure cross-interview uniqueness
+            const pastInterviews = await Interview.find({
+                username: interview.username,
+                status: 'completed',
+                topics: currentTopic.name
+            });
+
+            const pastQuestions = pastInterviews.flatMap(i => i.history.map(h => h.question));
+            const currentSessionQuestions = interview.history.map(h => h.question);
+            const allUsedQuestions = [...new Set([...pastQuestions, ...currentSessionQuestions])];
+
+            // Filter out already used questions and stale/invalid content (Python/Architecture)
+            const availableCache = topicCache.filter(q => {
+                const qText = q.data.question.toLowerCase();
+                const isAlreadyUsed = allUsedQuestions.includes(q.data.question);
+                const isInvalid = qText.includes('python') ||
+                    (currentTopic.name === 'selenium' && (qText.includes('architecture') || qText.includes('json wire') || qText.includes('w3c protocol')));
+
+                return !isAlreadyUsed && !isInvalid;
+            });
 
             if (relativeIdx <= currentTopic.cached && availableCache.length > 0) {
                 const randomIndex = Math.floor(Math.random() * availableCache.length);
@@ -147,7 +164,7 @@ async function getNextInterviewQuestion(interview) {
             }
 
             // Escalation to Gemini
-            const result = await generateTopicQuestionWithGemini(interview, currentTopic.name, qCount, model);
+            const result = await generateTopicQuestionWithGemini(interview, currentTopic.name, qCount, model, allUsedQuestions);
 
             // Save to DB Cache for future sessions (with duplicate prevention)
             if (result && result.question) {
@@ -213,9 +230,11 @@ async function getNextInterviewQuestion(interview) {
         
         CONSTRAINTS:
         - "feedback": STRICTLY 1 LINE. PINPOINT ACCURACY REQUIRED.
-        - "question": 1-3 LINES maximum. NO REPEATS of core concepts from: ${JSON.stringify(usedQuestions)}.
+        - "question": 1-3 LINES maximum. UNQIUENESS: Do not repeat or closely mirror concepts from: ${JSON.stringify(allUsedQuestions.slice(-15))}.
+        - TOPIC ADHERENCE: Strictly stay within the subtopic: ${subtopic}. 
+        - NO ARCHITECTURE: If topic is Selenium, strictly NO talk of WebDriver hierarchy, protocols, or internals.
         - QUESTION TYPE: ${canAskCode ? 'Theoretical or Practical Code Writing (Java ONLY, max 2 code total)' : 'THEORETICAL ONLY'}.
-        - LANGUAGE GUARD: If isCodeRequired is true, the question MUST strictly involve Java code, even if the topic is not Java-specific.
+        - LANGUAGE GUARD: If isCodeRequired is true, the question MUST strictly involve Java code. NEVER use Python.
         
         JSON FORMAT ONLY:
         {"question": "str", "isCodeRequired": boolean, "feedback": "Direct evaluation of latest answer"}
@@ -231,15 +250,16 @@ async function getNextInterviewQuestion(interview) {
     }
 }
 
-async function generateTopicQuestionWithGemini(interview, topic, qCount, model) {
-    const blueprint = checkpointBlueprint[topic] || [];
-    const checkpoint = blueprint.find(c => qCount >= c.range[0] && qCount <= c.range[1]) || { subtopic: topic, difficulty: 'Intermediate' };
-    const usedQuestions = interview.history.map(h => h.question);
-    const codeCount = interview.history.filter(h => h.isCodeRequired).length;
-    const canAskCode = codeCount < 2;
+async function generateTopicQuestionWithGemini(interview, topic, qCount, model, allUsedQuestions = []) {
+    try {
+        const currentTopic = topicBlueprint[topic] || topicBlueprint['java'];
+        const checkpoint = blueprint.find(c => qCount >= c.range[0] && qCount <= c.range[1]) || { subtopic: topic, difficulty: 'Intermediate' };
+        const usedQuestions = interview.history.map(h => h.question);
+        const codeCount = interview.history.filter(h => h.isCodeRequired).length;
+        const canAskCode = codeCount < 2;
 
-    const lastInteraction = interview.history[interview.history.length - 1];
-    const prompt = `
+        const lastInteraction = interview.history[interview.history.length - 1];
+        const prompt = `
         System: High-Precision Technical Interviewer for ${topic}.
         Sub-topic Target: ${checkpoint.subtopic}.
         
@@ -254,14 +274,18 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model) 
         RULES:
         - FEEDBACK: STRICTLY 1 LINE. Direct and unique to their specific answer.
         - QUESTION: Max 3 lines. ${canAskCode ? 'Code writing allowed (STRICTLY Java ONLY, total limit 2).' : 'THEORETICAL only.'}
-        - LANGUAGE GUARD: Any code provided or requested MUST be in Java.
+        - LANGUAGE GUARD: Any code provided or requested MUST be in Java. ABSOLUTELY NO PYTHON.
         
         JSON FORMAT ONLY:
         {"question": "str", "isCodeRequired": boolean, "feedback": "Specific, technical critique of the latest answer."}
     `;
-    const result = await model.generateContent(prompt);
-    let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");
-    return JSON.parse(text);
+        const result = await model.generateContent(prompt);
+        let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("[InterviewService] Generation Error:", error.message);
+        throw error;
+    }
 }
 
 async function generateFinalReport(interview) {
