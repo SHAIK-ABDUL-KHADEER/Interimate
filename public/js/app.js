@@ -597,6 +597,7 @@ const App = {
     renderLogin(container) {
         container.innerHTML = `
             <div class="auth-container">
+                <img src="assets/logo.png" alt="Interimate Logo" style="height: 60px; width: auto; margin: 0 auto 2rem; display: block;">
                 <h2>User Login</h2>
                 <div class="form-group">
                     <label>Email Address</label>
@@ -735,6 +736,7 @@ const App = {
     renderRegister(container) {
         container.innerHTML = `
             <div class="auth-container">
+                <img src="assets/logo.png" alt="Interimate Logo" style="height: 60px; width: auto; margin: 0 auto 2rem; display: block;">
                 <h2>Register Account</h2>
                 <div class="form-group">
                     <label>Username (Unique ID)</label>

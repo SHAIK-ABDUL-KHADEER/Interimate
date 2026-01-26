@@ -14,6 +14,7 @@
         gtag('config', 'G-1CECZ8Q79H');
     </script>
     <title>Interimate - Career QEA Prep</title>
+    <link rel="icon" type="image/png" href="assets/logo.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,7 +32,11 @@
     <div id="app">
         <header id="main-header" class="hidden">
             <nav>
-                <div class="logo">Interimate</div>
+                <div class="logo" onclick="App.setState('landing')" style="cursor: pointer;">
+                    <img src="assets/logo.png" alt="Interimate Logo"
+                        style="height: 40px; width: auto; vertical-align: middle;">
+                    <span style="vertical-align: middle; margin-left: 0.5rem;">Interimate</span>
+                </div>
                 <button id="mobile-menu-toggle" class="mobile-menu-btn" aria-label="Toggle Menu">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">

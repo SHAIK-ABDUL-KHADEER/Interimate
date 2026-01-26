@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sigma Command Center // Interimate Admin</title>
+    <link rel="icon" type="image/png" href="assets/logo.png">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -211,6 +212,7 @@
     <!-- Login Screen -->
     <div id="admin-login-overlay">
         <div class="admin-login-card">
+            <img src="assets/logo.png" alt="Sigma Logo" style="height: 80px; width: auto; margin-bottom: 2rem;">
             <h2 style="color: var(--accent); margin-bottom: 2rem; font-weight: 900;">SIGMA_COMMAND_AUTH</h2>
             <div class="form-group" style="text-align: left;">
                 <label>ADMIN_ID</label>
@@ -228,11 +230,14 @@
     <!-- Main Dashboard -->
     <div class="admin-container hidden" id="admin-dashboard">
         <div class="admin-header">
-            <div>
-                <h1 style="font-size: 2.5rem; font-weight: 900; color: var(--accent);">SIGMA COMMAND</h1>
-                <p
-                    style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                    [ ACCESS_LEVEL: OVERLORD ] [ SESSION_ACTIVE ]</p>
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <img src="assets/logo.png" alt="Sigma Logo" style="height: 60px; width: auto;">
+                <div>
+                    <h1 style="font-size: 2.5rem; font-weight: 900; color: var(--accent); margin: 0;">SIGMA COMMAND</h1>
+                    <p
+                        style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                        [ ACCESS_LEVEL: OVERLORD ] [ SESSION_ACTIVE ]</p>
+                </div>
             </div>
             <button class="btn-secondary" style="width: auto; padding: 0.8rem 2rem;" onclick="Admin.logout()">TERMINATE
                 SESSION</button>
