@@ -12,8 +12,9 @@ async function clearInterviewCache() {
     }
 
     try {
-        console.log('[1/2] Connecting to Sigma Cloud Cluster...');
-        await mongoose.connect(process.env.MONGODB_URI);
+        console.log(`[1/2] Connecting to Sigma Cloud Cluster...`);
+        console.log(`      URI detected: ${process.env.MONGODB_URI.split('@').pop()}`); // Log the host part for safety
+        await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
         console.log('      -> Connection Established.');
 
         console.log('[2/2] Pursuing Interview Cache Deletion...');

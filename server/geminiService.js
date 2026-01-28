@@ -67,8 +67,8 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
         Checkpoint Sub-topic: ${checkpoint.subtopic}.
         Linear Difficulty: ${checkpoint.difficulty}.
         
-        ${type === 'quiz' ? `Task: Generate a UNIQUE MCQ for Question #${unitNumber}. 
-        CRITICAL FOR MCQs: If the question asks for code output, you MUST include the code block in the "question" field using markdown backticks.` : `Task: Code Snippet Challenge for Question #${unitNumber}. Focus on practical implementation of ${checkpoint.subtopic}.`}
+        ${type === 'quiz' ? `Task: Generate a UNIQUE ${unitNumber % 5 === 0 ? 'PRACTICAL CODE CHALLENGE (MCQ)' : 'STRICTLY THEORETICAL and TRICKY'} MCQ for Question #${unitNumber}. 
+        CRITICAL FOR MCQs: ${unitNumber % 5 === 0 ? 'If the question asks for code output, you MUST include the code block in the "question" field using markdown backticks.' : 'ABSOLUTELY NO CODE SNIPPETS. Focus on core architectural concepts, internal workings, or common pitfalls.'}` : `Task: Code Snippet Challenge for Question #${unitNumber}. Focus on practical implementation of ${checkpoint.subtopic}.`}
         
         ANTI-DUPLICATION HISTORY (DO NOT REPEAT CONCEPTS OR WORDING FROM THESE): 
         ${historyList.join(' | ')}
@@ -77,6 +77,7 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
         1. CONCEPTUAL UNIQUENESS: If a concept in history is "Reverse String", you MUST NOT ask anything about reversing strings. Explore a different part of ${checkpoint.subtopic}.
         2. NO OVERLAP: Do not allocate advanced topics to basic ranges. Stick strictly to ${checkpoint.subtopic}.
         3. SELENIUM: JAVA ONLY. NO PYTHON.
+        4. TRICKY THEORY: For theoretical questions, focus on "What happens when...", "Why do we use...", or edge cases that test deep understanding.
         
         JSON Schema:
         ${type === 'quiz' ?

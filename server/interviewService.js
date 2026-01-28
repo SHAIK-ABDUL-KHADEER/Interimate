@@ -127,7 +127,7 @@ async function getNextInterviewQuestion(interview) {
                     const cachedQ = availableCache[randomIndex].data;
                     const lastInteraction = interview.history[interview.history.length - 1];
 
-                    let dynamicFeedback = `Acknowledged. Moving on with ${currentTopicBudget.name}...`;
+                    let dynamicFeedback = `Protocol Sync: Analyzing technical response for ${currentTopicBudget.name}...`;
                     if (qCount > 2) {
                         try {
                             const feedbackPrompt = `
@@ -215,8 +215,9 @@ async function getNextInterviewQuestion(interview) {
         Candidate: ${lastInteraction.answer || '[ NO RESPONSE PROVIDED ]'}
 
         TASK:
-        1. PINPOINT EVALUATION: In the "feedback" field, provide a direct, critical (1 line). 
+        1. PINPOINT EVALUATION: In the "feedback" field, provide a direct, critical technical evaluation (1 line). 
         - STICK TO THE TOPIC: Focus only on technical accuracy. NO ARCHITECTURE.
+        - ANTI-POLITE: ABSOLUTELY NO introductory filler (e.g., "Acknowledged", "Great answer"). Start directly with the critique.
         2. ASK THE NEXT QUESTION: Generate a unique, APPROACHABLE follow-up.
 
         CONSTRAINTS:
@@ -261,6 +262,7 @@ async function generateTopicQuestionWithGemini(interview, topic, qCount, model, 
 
         TASK:
         1. PINPOINT FEEDBACK: critically evaluate the A (Answer) above (1 line).
+           - ANTI-POLITE: ABSOLUTELY NO filler like "Acknowledged" or "Good". Focus ONLY on technical correctness.
         2. UNIQUE NEXT Q: Generate an APPROACHABLE question from any concept in the CORE SYLLABUS above.
         
         RULES:
