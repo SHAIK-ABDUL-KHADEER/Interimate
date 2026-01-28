@@ -70,15 +70,21 @@ const Quiz = {
         // --- RESET ALL STATE TO PREVENT LEAKAGE ---
         this.competitionMode = true;
         this.competitionTeam = team;
-        this.competitionResponses = [];
+        this.competitionResponses = team.responses || [];
+        this.currentIndex = this.competitionResponses.length; // Intelligent Resumption
         this.currentCompQuestion = null;
-        this.currentIndex = 0;
         this.errorMessage = null;
         this.loading = false;
         this.processing = false;
 
         this.category = team.topic;
-        this.container = document.getElementById('content'); // Fix: Should be 'content' to match app.js
+        this.container = document.getElementById('content');
+
+        if (this.currentIndex >= 25) {
+            // Already finished
+            this.finishCompetition();
+            return;
+        }
 
         this.loading = true;
         this.render();
@@ -86,16 +92,22 @@ const Quiz = {
     },
 
     async loadCompetitionQuestion() {
+        App.setLoading(true);
         this.loading = true;
         this.render();
         try {
             const res = await fetch(`/api/competition/question?teamName=${this.competitionTeam.teamName}&index=${this.currentIndex + 1}`);
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || "Tactical Sync Interrupted.");
+            }
             const data = await res.json();
             this.currentCompQuestion = data;
         } catch (err) {
-            this.errorMessage = "Failed to synchronize competition data.";
+            this.errorMessage = "Failed to synchronize competition data: " + err.message;
         } finally {
             this.loading = false;
+            App.setLoading(false);
             this.render();
         }
     },
