@@ -129,8 +129,17 @@ const Admin = {
             const status = await statusRes.json();
 
             const btnToggle = document.getElementById('btn-toggle-comp');
+            const btnRelease = document.getElementById('btn-release-results');
+
             btnToggle.textContent = status.isActive ? 'TERMINATE COMPETITION' : 'START COMPETITION';
             btnToggle.classList.toggle('btn-danger', status.isActive);
+
+            // Release results should only be enabled if competition is NOT active
+            if (btnRelease) {
+                btnRelease.disabled = status.isActive;
+                btnRelease.style.opacity = status.isActive ? '0.5' : '1';
+                btnRelease.title = status.isActive ? 'Terminate competition before releasing results' : '';
+            }
 
             const res = await fetch('/api/admin/users', { // Note: We need a specific results endpoint if strictly released, but admin sees live
                 headers: { 'Authorization': `Bearer ${this.token}` }

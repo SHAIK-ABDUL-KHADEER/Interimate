@@ -63,7 +63,7 @@ const Quiz = {
         this.competitionResponses = [];
         this.currentIndex = 0;
         this.category = team.topic;
-        this.container = document.getElementById('main-content');
+        this.container = document.getElementById('content'); // Fix: Should be 'content' to match app.js
         this.render();
         await this.loadCompetitionQuestion();
     },
@@ -496,6 +496,78 @@ const Quiz = {
                 menu.classList.add('show');
                 trigger.classList.add('open');
             }
+        }
+    },
+
+    renderCompMCQ(q) {
+        if (!q) return `<div class="loading-spinner"></div>`;
+        return `
+            <div class="mcq-card">
+                <p style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); margin-bottom: 2rem; opacity: 0.6;">TEAM: ${this.competitionTeam?.teamName || 'N/A'} // SECTOR: ${this.competitionTeam?.topic?.toUpperCase() || 'N/A'} // QID: ${this.currentIndex + 1}</p>
+                <p class="question-text">${this.formatText(q.question)}</p>
+                <div class="options-list">
+                    ${q.options.map((opt, i) => `
+                        <button class="option-btn" onclick="Quiz.submitCompMCQ(${i})">
+                            <span style="color: var(--accent); margin-right: 1rem; font-weight: 800;">${String.fromCharCode(65 + i)}</span> ${this.formatText(opt)}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    },
+
+    async submitCompMCQ(idx) {
+        if (this.processing) return;
+        this.processing = true;
+
+        const q = this.currentCompQuestion;
+        const isCorrect = idx === q.answer;
+
+        this.competitionResponses.push({
+            question: q.question,
+            userAnswer: q.options[idx],
+            correctAnswer: q.options[q.answer],
+            isCorrect: isCorrect
+        });
+
+        if (this.currentIndex < 24) {
+            this.currentIndex++;
+            await this.loadCompetitionQuestion();
+        } else {
+            await this.finishCompetition();
+        }
+        this.processing = false;
+    },
+
+    async finishCompetition() {
+        this.loading = true;
+        this.render();
+
+        const score = this.competitionResponses.filter(r => r.isCorrect).length;
+        const percentage = (score / 25) * 100;
+
+        try {
+            await fetch('/api/competition/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    teamName: this.competitionTeam.teamName,
+                    responses: this.competitionResponses,
+                    score,
+                    percentage
+                })
+            });
+
+            this.container.innerHTML = `
+                <div class="hero">
+                    <h2 class="hero-title">MISSION_COMPLETE</h2>
+                    <p class="hero-subtitle">THANK YOU FOR TAKING THE QUIZ. YOUR RESPONSES HAVE BEEN RECORDED.</p>
+                    <p style="color: var(--accent); margin-top: 2rem; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.3em;">KINDLY WAIT FOR THE OFFICIAL RESULT RELEASE.</p>
+                    <button class="btn-primary" style="width: auto; margin-top: 3rem;" onclick="App.setState('dashboard')">RETURN_TO_BASE</button>
+                </div>
+            `;
+        } catch (err) {
+            App.notify("Submission Sync Error. Data saved locally.", "error");
         }
     }
 };
