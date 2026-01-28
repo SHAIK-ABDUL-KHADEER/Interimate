@@ -873,9 +873,29 @@ const App = {
 
         container.innerHTML = `
             <div class="dashboard-header" style="margin-bottom: 4rem;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 2rem;">
                     <h1 style="font-size: 3.5rem; letter-spacing: -0.05em; font-weight: 900; color: var(--accent); text-transform: uppercase;">User Dashboard</h1>
-                    <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); opacity: 0.6; margin-bottom: 1rem;">INTERIMATE // v3.0 [PROD]</div>
+                    
+                    <div class="competition-card" onclick="App.setState('competition')" style="
+                        flex: 0 0 auto;
+                        background: rgba(212, 255, 0, 0.05);
+                        border: 1px solid var(--accent);
+                        padding: 1rem 2rem;
+                        border-radius: 4px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-end;
+                        cursor: pointer;
+                        transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+                        box-shadow: 0 0 20px rgba(212, 255, 0, 0.05);
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent);"></div>
+                        <span style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.3em; margin-bottom: 0.25rem; opacity: 0.8;">Active Protocol</span>
+                        <h3 style="font-size: 1.25rem; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 0.1em;">Quiz Competition</h3>
+                        <div style="font-family: var(--font-mono); font-size: 0.55rem; color: var(--accent); margin-top: 0.25rem; opacity: 0.6;">SIGMA_EVENT // v3.0</div>
+                    </div>
                 </div>
                 <p style="color: var(--text-secondary); max-width: 600px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; margin-top: 1rem;">User: ${Auth.empId} // Status: ${this.userProgress.plan === 'paid' ? 'PREMIUM ACCESS' : 'FREE TIER'} // CREDITS: ${this.userProgress.interviewCredits || 0}</p>
             </div>
