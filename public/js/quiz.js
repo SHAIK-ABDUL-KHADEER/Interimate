@@ -67,12 +67,20 @@ const Quiz = {
     },
 
     async initCompetition(team) {
+        // --- RESET ALL STATE TO PREVENT LEAKAGE ---
         this.competitionMode = true;
         this.competitionTeam = team;
         this.competitionResponses = [];
+        this.currentCompQuestion = null;
         this.currentIndex = 0;
+        this.errorMessage = null;
+        this.loading = false;
+        this.processing = false;
+
         this.category = team.topic;
         this.container = document.getElementById('content'); // Fix: Should be 'content' to match app.js
+
+        this.loading = true;
         this.render();
         await this.loadCompetitionQuestion();
     },
@@ -140,25 +148,40 @@ const Quiz = {
 
         const currentQuestions = this.questions[this.section] || [];
 
-        // SYNTHESIS FAILURE CHECK
-        // If not in competition mode and no questions found, or in competition mode and no current question
-        if (!this.competitionMode && currentQuestions.length === 0) {
+        // --- ERROR STATE RENDERING ---
+        if (this.errorMessage) {
             this.container.innerHTML = `
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; text-align: center; padding: 2rem;">
                     <div style="font-size: 2rem; color: var(--danger); font-weight: 900; margin-bottom: 2rem; text-transform: uppercase;">SYNTHESIS FAILURE</div>
                     <p style="color: var(--text-secondary); max-width: 500px; margin-bottom: 3rem; font-family: var(--font-mono); line-height: 1.8;">
-                        [ ERROR ]: ${this.errorMessage || 'Unknown extraction error detected in the AI core.'}
+                        [ ERROR ]: ${this.errorMessage}
                     </p>
                     <div style="display: flex; gap: 1rem;">
-                        <button class="btn-primary" onclick="Quiz.init('${this.category}', '${this.section}', Quiz.container)" style="width: auto; padding: 1rem 3rem;">RETRY SYNC</button>
+                        <button class="btn-primary" onclick="${this.competitionMode ? 'Quiz.loadCompetitionQuestion()' : `Quiz.init('${this.category}', '${this.section}', Quiz.container)`}" style="width: auto; padding: 1rem 3rem;">RETRY SYNC</button>
                         <button class="btn-secondary" onclick="App.setState('selection')" style="width: auto; padding: 1rem 3rem;">ABORT TO SELECTION</button>
                     </div>
                 </div>`;
             return;
         }
 
+        // SYNTHESIS FAILURE CHECK (Missing Data)
+        if (!this.competitionMode && currentQuestions.length === 0) {
+            this.container.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; text-align: center; padding: 2rem;">
+                    <div style="font-size: 2rem; color: var(--danger); font-weight: 900; margin-bottom: 2rem; text-transform: uppercase;">MODULE_EXTRACTION_FAILURE</div>
+                    <p style="color: var(--text-secondary); max-width: 500px; margin-bottom: 3rem; font-family: var(--font-mono); line-height: 1.8;">
+                        No data found for this module in the AI core.
+                    </p>
+                    <button class="btn-secondary" onclick="App.setState('selection')" style="width: auto; padding: 1rem 3rem;">RETURN TO SELECTION</button>
+                </div>`;
+            return;
+        }
+
         if (this.competitionMode && !this.currentCompQuestion) {
-            // Wait for loadCompetitionQuestion to finish and re-render
+            // This case should be handled by the loading state, 
+            // but if we're here, it means something went wrong.
+            this.errorMessage = "Competition data is currently unavailable.";
+            this.render();
             return;
         }
 
