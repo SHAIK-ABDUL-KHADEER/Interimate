@@ -2109,6 +2109,18 @@ const App = {
                 return this.renderCompetitionLeaderboard(container);
             }
 
+            // AUTO-RESUMPTION CHECK
+            const teamRes = await fetch('/api/competition/my-team', {
+                headers: Auth.getAuthHeader()
+            });
+            const myTeam = await teamRes.json();
+
+            if (myTeam) {
+                this.currentTeam = myTeam;
+                console.log('[App] Resuming mission for team:', myTeam.teamName);
+                return Quiz.initCompetition(myTeam);
+            }
+
             // JOIN TEAM UI
             container.innerHTML = `
                 <div class="auth-container" style="max-width: 500px; margin-top: 5vh;">

@@ -80,23 +80,10 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Rate Limiting Protocols
-const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per window
-    message: { message: "TOO_MANY_REQUESTS: Tactical pause required. Please wait 15 minutes." }
-});
-
-const authLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 10, // Limit each IP to 10 attempts
-    message: { message: "AUTH_LOCKDOWN: Maximum attempts exceeded. Protocol restricted for 1 hour." }
-});
-
-app.use('/api/', apiLimiter);
-// app.use('/api/login', authLimiter);
-// app.use('/api/register', authLimiter);
-// app.use('/api/admin/login', authLimiter);
+// Rate Limiting Protocols Disabled for smooth operative flow
+// const apiLimiter = rateLimit({ ... });
+// const authLimiter = rateLimit({ ... });
+// app.use('/api/', apiLimiter);
 
 // Diagnostic Middleware
 app.use((req, res, next) => {
@@ -1313,6 +1300,15 @@ app.post('/api/telemetry/error', (req, res) => {
 });
 
 // --- QUIZ COMPETITION ENDPOINTS ---
+
+app.get('/api/competition/my-team', authenticateToken, async (req, res) => {
+    try {
+        const team = await CompTeam.findOne({ leaderUsername: req.user.empId });
+        res.json(team); // Returns null if no team registered
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
 
 app.get('/api/competition/status', async (req, res) => {
     try {
