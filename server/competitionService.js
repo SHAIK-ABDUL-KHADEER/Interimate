@@ -90,8 +90,14 @@ async function getCompetitionQuestion(teamName, topic, currentQuestionIdx) {
     `;
 
     try {
+        console.log(`[CompService] Triggering AI for ${topic} / ${subtopic} / Q#${currentQuestionIdx}`);
         const result = await model.generateContent(prompt);
-        let text = (await result.response).text().replace(/^[^{]*/, "").replace(/[^}]*$/, "");
+        const responseText = (await result.response).text();
+        console.log(`[CompService] AI Output Received (Length: ${responseText.length})`);
+
+        let text = responseText.replace(/^[^{]*/, "").replace(/[^}]*$/, "");
+        if (!text) throw new Error("AI returned empty or invalid JSON structure.");
+
         const questionData = JSON.parse(text);
 
         // Save for potential sharing
@@ -104,14 +110,34 @@ async function getCompetitionQuestion(teamName, topic, currentQuestionIdx) {
 
         return questionData;
     } catch (err) {
-        console.error("[CompService] Generation Error:", err.message);
-        // Emergency Fallback
-        return {
-            question: `* [Fallback] Explain the core concept of ${subtopic} in ${topic}.`,
-            options: ["Option A", "Option B", "Option C", "Option D"],
+        console.error("[CompService] Synchronization Failure:", err.message);
+
+        const fallbackQ = {
+            question: `Explain the fundamental concept of ${subtopic} in context of ${topic}.`,
+            options: [
+                "It is a core structural element.",
+                "It handles data processing logic.",
+                "It is used for memory management.",
+                "It defines the object behavior."
+            ],
             answer: 0,
-            explanation: "Fallback question deployed due to synchronization delay."
+            explanation: `Fallback mission data deployed for ${subtopic} due to neural link synchronization delay.`
         };
+
+        // SAVE FALLBACK TO DB SO USER CAN AT LEAST SEE SOMETHING IN DB
+        try {
+            await CompQuestion.create({
+                topic: topic,
+                questionId: currentQuestionIdx,
+                teamName: teamName,
+                data: fallbackQ
+            });
+            console.log(`[CompService] Emergency Fallback recorded in database for Q#${currentQuestionIdx}`);
+        } catch (dbErr) {
+            console.error("[CompService] Failed to save fallback to database:", dbErr.message);
+        }
+
+        return fallbackQ;
     }
 }
 
