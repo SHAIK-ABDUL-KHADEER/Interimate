@@ -31,10 +31,19 @@ const Quiz = {
     },
 
     async init(category, section, container) {
+        // --- RESET ALL STATE TO PREVENT LEAKAGE ---
+        this.competitionMode = false;
+        this.competitionTeam = null;
+        this.competitionResponses = [];
+        this.currentCompQuestion = null;
+        this.currentIndex = 0;
+        this.errorMessage = null;
+        this.loading = false;
+        this.processing = false;
+
         this.category = category;
         this.section = section || 'mcq';
         this.container = container;
-        this.currentIndex = 0;
         this.loading = true;
         this.render(); // Show loading state
         await this.loadQuestions();
@@ -130,7 +139,10 @@ const Quiz = {
         }
 
         const currentQuestions = this.questions[this.section] || [];
-        if (currentQuestions.length === 0) {
+
+        // SYNTHESIS FAILURE CHECK
+        // If not in competition mode and no questions found, or in competition mode and no current question
+        if (!this.competitionMode && currentQuestions.length === 0) {
             this.container.innerHTML = `
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; text-align: center; padding: 2rem;">
                     <div style="font-size: 2rem; color: var(--danger); font-weight: 900; margin-bottom: 2rem; text-transform: uppercase;">SYNTHESIS FAILURE</div>
@@ -145,7 +157,15 @@ const Quiz = {
             return;
         }
 
-        const q = currentQuestions[this.currentIndex];
+        if (this.competitionMode && !this.currentCompQuestion) {
+            // Wait for loadCompetitionQuestion to finish and re-render
+            return;
+        }
+
+        const q = this.competitionMode ? this.currentCompQuestion : currentQuestions[this.currentIndex];
+
+        // Safeguard if q is still null somehow
+        if (!q) return;
         this.container.innerHTML = `
             <div class="quiz-header">
                 <div>
