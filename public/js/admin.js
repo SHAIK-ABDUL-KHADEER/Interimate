@@ -98,12 +98,103 @@ const Admin = {
             document.getElementById('stat-users').textContent = this.stats.users;
             document.getElementById('stat-interviews').textContent = this.stats.interviews;
             document.getElementById('stat-mcq').textContent = this.stats.mcq;
-            document.getElementById('stat-practice').textContent = this.stats.practice;
+
+            // Competition Mode Stat
+            const compRes = await fetch('/api/competition/status');
+            const compData = await compRes.json();
+            const compEl = document.getElementById('stat-comp');
+            if (compEl) {
+                compEl.textContent = compData.isActive ? 'ON' : 'OFF';
+                compEl.style.color = compData.isActive ? 'var(--accent)' : '#444';
+            }
 
             this.renderCharts();
         } catch (err) {
             console.error('Stats Error:', err);
         }
+    },
+
+    showCompetition() {
+        document.getElementById('section-users').classList.add('hidden');
+        document.getElementById('section-competition').classList.remove('hidden');
+        this.loadCompetitionData();
+        // Set refresh interval
+        if (this.compInterval) clearInterval(this.compInterval);
+        this.compInterval = setInterval(() => this.loadCompetitionData(), 5000);
+    },
+
+    async loadCompetitionData() {
+        try {
+            const statusRes = await fetch('/api/competition/status');
+            const status = await statusRes.json();
+
+            const btnToggle = document.getElementById('btn-toggle-comp');
+            btnToggle.textContent = status.isActive ? 'TERMINATE COMPETITION' : 'START COMPETITION';
+            btnToggle.classList.toggle('btn-danger', status.isActive);
+
+            const res = await fetch('/api/admin/users', { // Note: We need a specific results endpoint if strictly released, but admin sees live
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            // Re-using admin teams fetch or specific competition results endpoint
+            const compRes = await fetch('/api/admin/competition/results', {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            const teams = await compRes.json();
+
+            const body = document.getElementById('comp-leaderboard-body');
+            body.innerHTML = teams.map(t => `
+                <tr>
+                    <td>${t.teamName}</td>
+                    <td>${t.topic}</td>
+                    <td>${t.score}</td>
+                    <td>${t.percentage}%</td>
+                    <td>${t.completed ? '<span style="color:var(--success)">DONE</span>' : '<span style="color:var(--accent)">ACTIVE</span>'}</td>
+                    <td><button class="btn-inspect" onclick="Admin.inspectTeam('${t.teamName}')">VIEW RESPONSES</button></td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error('Comp Load Error:', err);
+        }
+    },
+
+    async toggleCompetition() {
+        const btn = document.getElementById('btn-toggle-comp');
+        const isActive = btn.textContent === 'START COMPETITION';
+
+        if (isActive && !confirm("Starting a new competition will WIPE all current team data. Proceed?")) return;
+
+        try {
+            const res = await fetch('/api/admin/competition/toggle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({ active: isActive })
+            });
+            const status = await res.json();
+            this.loadStats();
+            this.loadCompetitionData();
+        } catch (err) {
+            alert("Toggle Failed: " + err.message);
+        }
+    },
+
+    async releaseResults() {
+        try {
+            await fetch('/api/admin/competition/release', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            alert("RESULTS RELEASED GLOBALLY");
+        } catch (err) {
+            alert("Release Failed");
+        }
+    },
+
+    inspectTeam(teamName) {
+        // Implementation for showing specific team responses in a modal
+        alert(`Inspecting ${teamName} - (Responses in Operational Log)`);
     },
 
     async loadUsers() {

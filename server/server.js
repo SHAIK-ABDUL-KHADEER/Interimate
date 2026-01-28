@@ -6,8 +6,9 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { readJSON, writeJSON } = require('./db');
+const { User, Question, Progress, OTP, Interview, Payment, CompStatus, CompTeam, CompQuestion } = require('./models');
 const { generateQuestion, validateCode } = require('./geminiService');
+const { getCompetitionQuestion } = require('./competitionService');
 const fs = require('fs').promises;
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
@@ -1310,6 +1311,104 @@ app.post('/api/telemetry/error', (req, res) => {
     console.error(`[CLIENT_ERROR] URL: ${url} | ERR: ${error}`);
     if (stack) console.error(stack);
     res.status(204).send();
+});
+
+// --- QUIZ COMPETITION ENDPOINTS ---
+
+app.get('/api/competition/status', async (req, res) => {
+    try {
+        let status = await CompStatus.findOne({ systemId: 'GLOBAL_COMP' });
+        if (!status) status = await CompStatus.create({ systemId: 'GLOBAL_COMP' });
+        res.json(status);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.post('/api/competition/register', async (req, res) => {
+    try {
+        const { teamName, topic, leaderUsername } = req.body;
+        const exists = await CompTeam.findOne({ teamName });
+        if (exists) return res.status(400).json({ message: "Team name already exists." });
+
+        const team = await CompTeam.create({ teamName, topic, leaderUsername });
+        res.json(team);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.get('/api/competition/question', async (req, res) => {
+    try {
+        const { teamName, index } = req.query;
+        const team = await CompTeam.findOne({ teamName });
+        if (!team) return res.status(404).json({ message: "Team not found." });
+
+        const question = await getCompetitionQuestion(teamName, team.topic, parseInt(index));
+        res.json(question);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.post('/api/competition/submit', async (req, res) => {
+    try {
+        const { teamName, responses, score, percentage } = req.body;
+        const team = await CompTeam.findOneAndUpdate(
+            { teamName },
+            { responses, score, percentage, completed: true, completedAt: new Date() },
+            { new: true }
+        );
+        res.json({ message: "Responses recorded. Wait for results.", team });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// ADMIN COMPETITION CONTROLS
+app.post('/api/admin/competition/toggle', async (req, res) => {
+    try {
+        const { active } = req.body;
+        const status = await CompStatus.findOneAndUpdate(
+            { systemId: 'GLOBAL_COMP' },
+            { isActive: active, resultsReleased: false, startTime: active ? new Date() : null },
+            { upsert: true, new: true }
+        );
+        // If restarting, optionally clear old teams/questions
+        if (active) {
+            await CompTeam.deleteMany({});
+            await CompQuestion.deleteMany({});
+        }
+        res.json(status);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.post('/api/admin/competition/release', async (req, res) => {
+    try {
+        const status = await CompStatus.findOneAndUpdate(
+            { systemId: 'GLOBAL_COMP' },
+            { resultsReleased: true },
+            { new: true }
+        );
+        res.json(status);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.get('/api/competition/results', async (req, res) => {
+    try {
+        const status = await CompStatus.findOne({ systemId: 'GLOBAL_COMP' });
+        if (!status || !status.resultsReleased) {
+            return res.status(403).json({ message: "Results not released yet." });
+        }
+        const teams = await CompTeam.find({ completed: true }).sort({ percentage: -1, completedAt: 1 });
+        res.json(teams);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
 // Centralized SPA Routing for Clean URLs

@@ -3,6 +3,9 @@ const Quiz = {
     section: null,
     questions: { mcq: [], practice: [] },
     currentIndex: 0,
+    competitionMode: false,
+    competitionTeam: null,
+    competitionResponses: [],
     container: null,
     loading: false,
     processing: false,
@@ -52,6 +55,32 @@ const Quiz = {
         this.currentIndex = firstUnsolved;
 
         this.render();
+    },
+
+    async initCompetition(team) {
+        this.competitionMode = true;
+        this.competitionTeam = team;
+        this.competitionResponses = [];
+        this.currentIndex = 0;
+        this.category = team.topic;
+        this.container = document.getElementById('main-content');
+        this.render();
+        await this.loadCompetitionQuestion();
+    },
+
+    async loadCompetitionQuestion() {
+        this.loading = true;
+        this.render();
+        try {
+            const res = await fetch(`/api/competition/question?teamName=${this.competitionTeam.teamName}&index=${this.currentIndex + 1}`);
+            const data = await res.json();
+            this.currentCompQuestion = data;
+        } catch (err) {
+            this.errorMessage = "Failed to synchronize competition data.";
+        } finally {
+            this.loading = false;
+            this.render();
+        }
     },
 
     async loadQuestions() {
@@ -160,7 +189,7 @@ const Quiz = {
                 </button>
                 
                 <div class="quiz-content">
-                    ${this.section === 'mcq' ? this.renderMCQ(q) : this.renderPractice(q)}
+                    ${this.competitionMode ? this.renderCompMCQ(this.currentCompQuestion) : (this.section === 'mcq' ? this.renderMCQ(q) : this.renderPractice(q))}
                 </div>
 
                 <div class="mobile-quiz-nav">

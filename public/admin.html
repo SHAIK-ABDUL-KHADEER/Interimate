@@ -256,9 +256,10 @@
                 <div class="stat-value" id="stat-mcq">0</div>
                 <div class="stat-label">Theory Solved</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="stat-practice">0</div>
-                <div class="stat-label">Code Secures</div>
+            <div class="stat-card" style="border-color: var(--accent); cursor: pointer;"
+                onclick="Admin.showCompetition()">
+                <div class="stat-value" id="stat-comp">OFF</div>
+                <div class="stat-label">COMPETITION_MODE</div>
             </div>
         </div>
 
@@ -285,30 +286,66 @@
             </select>
         </div>
 
-        <h2
-            style="font-size: 1.2rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 2rem; border-left: 4px solid var(--accent); padding-left: 1rem;">
-            OPERATIVE REGISTRY</h2>
+        <div id="section-users">
+            <h2
+                style="font-size: 1.2rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 2rem; border-left: 4px solid var(--accent); padding-left: 1rem;">
+                OPERATIVE REGISTRY</h2>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Operative ID</th>
+                            <th>Email</th>
+                            <th>Tier</th>
+                            <th>Theory</th>
+                            <th>Practice</th>
+                            <th>Sessions</th>
+                            <th>Badges</th>
+                            <th>Score</th>
+                            <th>Joined</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-list-body">
+                        <!-- Dynamic Users -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-        <div class="admin-table-container">
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>Operative ID</th>
-                        <th>Email</th>
-                        <th>Tier</th>
-                        <th>Theory</th>
-                        <th>Practice</th>
-                        <th>Sessions</th>
-                        <th>Badges</th>
-                        <th>Score</th>
-                        <th>Joined</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="user-list-body">
-                    <!-- Dynamic Users -->
-                </tbody>
-            </table>
+        <div id="section-competition" class="hidden">
+            <h2
+                style="font-size: 1.2rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 2rem; border-left: 4px solid var(--accent); padding-left: 1rem;">
+                COMPETITION_MASTER</h2>
+            <div class="admin-table-container" style="display: flex; gap: 2rem; padding: 3rem;">
+                <div style="flex: 1;">
+                    <h3 style="color: var(--accent); margin-bottom: 1rem;">CONTROLS</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button class="btn-primary" id="btn-toggle-comp" onclick="Admin.toggleCompetition()">START
+                            COMPETITION</button>
+                        <button class="btn-secondary" id="btn-release-results" onclick="Admin.releaseResults()">RELEASE
+                            RESULTS</button>
+                    </div>
+                </div>
+                <div style="flex: 2;">
+                    <h3 style="color: var(--accent); margin-bottom: 1rem;">LIVE LEADERBOARD</h3>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Team Name</th>
+                                <th>Topic</th>
+                                <th>Score</th>
+                                <th>%</th>
+                                <th>Status</th>
+                                <th>Responses</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comp-leaderboard-body">
+                            <!-- Dynamic Comp Results -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 

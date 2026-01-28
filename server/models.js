@@ -73,11 +73,43 @@ const paymentSchema = new mongoose.Schema({
 paymentSchema.index({ paymentId: 1 }, { unique: true });
 paymentSchema.index({ username: 1 });
 
+// Competition Status Schema
+const compStatusSchema = new mongoose.Schema({
+    isActive: { type: Boolean, default: false },
+    resultsReleased: { type: Boolean, default: false },
+    startTime: { type: Date, default: null },
+    systemId: { type: String, default: 'GLOBAL_COMP' }
+});
+
+// Competition Team Schema
+const compTeamSchema = new mongoose.Schema({
+    teamName: { type: String, required: true, unique: true },
+    leaderUsername: { type: String, required: true },
+    topic: { type: String, required: true }, // java, sql
+    score: { type: Number, default: 0 },
+    percentage: { type: Number, default: 0 },
+    responses: { type: Array, default: [] }, // [{ question, userAnswer, correctAnswer, isCorrect }]
+    completed: { type: Boolean, default: false },
+    completedAt: { type: Date, default: null }
+});
+
+// Competition Question Schema (Separate from regular cache)
+const compQuestionSchema = new mongoose.Schema({
+    topic: { type: String, required: true },
+    questionId: { type: Number, required: true },
+    teamName: { type: String, required: true }, // Who it was originally generated for
+    data: { type: Object, required: true }, // Full question object
+    createdAt: { type: Date, default: Date.now }
+});
+
 const User = mongoose.model('User', userSchema);
 const Question = mongoose.model('Question', questionSchema);
 const Progress = mongoose.model('Progress', progressSchema);
 const OTP = mongoose.model('OTP', otpSchema);
 const Interview = mongoose.model('Interview', interviewSchema);
 const Payment = mongoose.model('Payment', paymentSchema);
+const CompStatus = mongoose.model('CompStatus', compStatusSchema);
+const CompTeam = mongoose.model('CompTeam', compTeamSchema);
+const CompQuestion = mongoose.model('CompQuestion', compQuestionSchema);
 
-module.exports = { User, Question, Progress, OTP, Interview, Payment };
+module.exports = { User, Question, Progress, OTP, Interview, Payment, CompStatus, CompTeam, CompQuestion };

@@ -68,7 +68,8 @@ const App = {
             '/leaderboard': 'leaderboard',
             '/badges': 'badges',
             '/selection': 'selection',
-            '/quiz': 'quiz'
+            '/quiz': 'quiz',
+            '/competition': 'competition'
         };
 
         if (staticPathsReverse[pathname]) {
@@ -282,7 +283,8 @@ const App = {
             'leaderboard': '/leaderboard',
             'badges': '/badges',
             'selection': '/selection',
-            'quiz': '/quiz'
+            'quiz': '/quiz',
+            'competition': '/competition'
         };
 
         const staticPaths = {
@@ -486,6 +488,15 @@ const App = {
                 break;
             case 'selection':
                 this.renderSelection(content);
+                break;
+            case 'quiz':
+                Quiz.init(this.currentCategory, this.currentSection, content);
+                break;
+            case 'competition':
+                this.renderCompetition(content);
+                break;
+            case 'competition':
+                this.renderCompetition(content);
                 break;
             case 'topic-setup':
                 this.renderTopicInterviewSetup();
@@ -2075,6 +2086,132 @@ const App = {
         `;
         document.body.appendChild(modal);
         modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    },
+
+    async renderCompetition(container) {
+        this.setLoading(true);
+        try {
+            const statusRes = await fetch('/api/competition/status');
+            const status = await statusRes.json();
+
+            if (!status.isActive && !status.resultsReleased) {
+                container.innerHTML = `
+                    <div class="hero">
+                        <h2 class="hero-title">STAND BY</h2>
+                        <p class="hero-subtitle">WAITING FOR ADMIN TO INITIATE PROTOCOL</p>
+                        <button class="btn-primary" style="width: auto; margin-top: 2rem;" onclick="App.setState('dashboard')">RETURN_TO_BASE</button>
+                    </div>
+                `;
+                return;
+            }
+
+            if (status.resultsReleased) {
+                return this.renderCompetitionLeaderboard(container);
+            }
+
+            // JOIN TEAM UI
+            container.innerHTML = `
+                <div class="auth-container" style="max-width: 500px; margin-top: 5vh;">
+                    <h2 style="color: var(--accent); margin-bottom: 2rem;">JOIN_COMPETITION_TEAM</h2>
+                    <div class="form-group">
+                        <label>TEAM_NAME</label>
+                        <input type="text" id="comp-team-name" placeholder="Enter team name...">
+                    </div>
+                    <div class="form-group">
+                        <label>TARGET_DOMAIN</label>
+                        <select id="comp-topic" style="width: 100%; padding: 1rem; background: #050505; color: #fff; border: 1px solid var(--border); border-radius: 2px;">
+                            <option value="java">JAVA_DEVELOPMENT</option>
+                            <option value="sql">DATABASE_RELATIONAL</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" style="margin-top: 2rem;" onclick="App.startCompetition()">INITIALIZE MISSION</button>
+                    <p id="comp-error" style="color: var(--danger); font-size: 0.7rem; margin-top: 1rem;"></p>
+                </div>
+            `;
+        } catch (err) {
+            container.innerHTML = `<div class="hero"><p>ENGINE_SYNC_ERROR: ${err.message}</p></div>`;
+        } finally {
+            this.setLoading(false);
+        }
+    },
+
+    async startCompetition() {
+        const teamName = document.getElementById('comp-team-name').value.trim();
+        const topic = document.getElementById('comp-topic').value;
+        const errorEl = document.getElementById('comp-error');
+
+        if (!teamName) return errorEl.textContent = "TEAM_ID_REQUIRED";
+
+        this.setLoading(true);
+        try {
+            const res = await fetch('/api/competition/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ teamName, topic, leaderUsername: Auth.empId })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            this.currentTeam = data;
+            Quiz.initCompetition(data);
+        } catch (err) {
+            errorEl.textContent = "REGISTRATION_FAILURE: " + err.message;
+        } finally {
+            this.setLoading(false);
+        }
+    },
+
+    async renderCompetitionLeaderboard(container) {
+        const res = await fetch('/api/competition/results');
+        const teams = await res.json();
+
+        container.innerHTML = `
+            <div class="hero" style="min-height: auto; padding: 2rem 0;">
+                <h1 class="hero-title" style="font-size: 3rem;">COMPETITION_RESULTS</h1>
+                <p class="hero-subtitle">PROTOCOL COMPLETED // HONOR ROLL</p>
+            </div>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr><th>Rank</th><th>Team</th><th>Domain</th><th>Score</th><th>Efficiency</th></tr>
+                    </thead>
+                    <tbody>
+                        ${teams.map((t, i) => `
+                            <tr style="${t.teamName === (this.currentTeam?.teamName || '') ? 'background: rgba(212,255,0,0.1);' : ''}" onclick="App.viewTeamDetails('${t.teamName}')">
+                                <td style="color: var(--accent); font-weight: 800;">#${i + 1}</td>
+                                <td style="font-weight: 900;">${t.teamName} ${t.teamName === (this.currentTeam?.teamName || '') ? '(YOU)' : ''}</td>
+                                <td style="text-transform: uppercase; font-size: 0.7rem;">${t.topic}</td>
+                                <td>${t.score}/25</td>
+                                <td style="color: var(--accent);">${t.percentage}%</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <div id="team-details-container" style="margin-top: 3rem;"></div>
+        `;
+    },
+
+    async viewTeamDetails(teamName) {
+        const res = await fetch('/api/competition/results');
+        const teams = await res.json();
+        const team = teams.find(t => t.teamName === teamName);
+        const container = document.getElementById('team-details-container');
+
+        container.innerHTML = `
+            <h3 style="color: var(--accent); margin-bottom: 2rem; border-left: 4px solid var(--accent); padding-left: 1rem; text-transform: uppercase;">Reviewing Mission Data: ${team.teamName}</h3>
+            <div class="dashboard-grid">
+                ${team.responses.map((r, i) => `
+                    <div class="card" style="padding: 1.5rem; text-align: left;">
+                        <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.5rem;">#${i + 1} Status: ${r.isCorrect ? '<span style="color:var(--success)">SECURED</span>' : '<span style="color:var(--danger)">BREACHED</span>'}</p>
+                        <h4 style="font-size: 0.9rem; margin-bottom: 1rem;">${r.question}</h4>
+                        <p style="font-size: 0.75rem; color: #fff;">Your Answer: ${r.userAnswer}</p>
+                        <p style="font-size: 0.75rem; color: var(--accent); opacity: 0.8;">Correct: ${r.correctAnswer}</p>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        container.scrollIntoView({ behavior: 'smooth' });
     }
 };
 
