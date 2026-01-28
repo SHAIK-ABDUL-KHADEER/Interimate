@@ -92,9 +92,13 @@ const Quiz = {
     },
 
     async loadCompetitionQuestion() {
-        App.setLoading(true);
-        this.loading = true;
-        this.render();
+        const isFirst = this.currentIndex === 0;
+        if (isFirst) {
+            this.loading = true;
+            this.render();
+        }
+
+        App.setLoading(true); // Stealth cursor loading
         try {
             const res = await fetch(`/api/competition/question?teamName=${this.competitionTeam.teamName}&index=${this.currentIndex + 1}`);
             if (!res.ok) {
@@ -106,7 +110,7 @@ const Quiz = {
         } catch (err) {
             this.errorMessage = "Failed to synchronize competition data: " + err.message;
         } finally {
-            this.loading = false;
+            if (isFirst) this.loading = false;
             App.setLoading(false);
             this.render();
         }
@@ -556,13 +560,18 @@ const Quiz = {
 
     renderCompMCQ(q) {
         if (!q) return `<div class="loading-spinner"></div>`;
+        const score = this.competitionResponses.filter(r => r.isCorrect).length;
+
         return `
             <div class="mcq-card">
-                <p style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); margin-bottom: 2rem; opacity: 0.6;">TEAM: ${this.competitionTeam?.teamName || 'N/A'} // SECTOR: ${this.competitionTeam?.topic?.toUpperCase() || 'N/A'} // QID: ${this.currentIndex + 1}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <p style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); opacity: 0.6; margin: 0;">MISSION: ${this.competitionTeam?.teamName || 'N/A'} // PROTOCOL: Q${this.currentIndex + 1}/25</p>
+                    <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--success); font-weight: 800; border: 1px solid var(--success); padding: 2px 10px; border-radius: 2px; box-shadow: 0 0 10px rgba(0,255,102,0.2);">LIVE_SCORE: ${score}</div>
+                </div>
                 <p class="question-text">${this.formatText(q.question)}</p>
-                <div class="options-list">
+                <div class="options-list" id="comp-options-list">
                     ${q.options.map((opt, i) => `
-                        <button class="option-btn" onclick="Quiz.submitCompMCQ(${i})">
+                        <button class="option-btn" id="option-${i}" onclick="Quiz.submitCompMCQ(${i})">
                             <span style="color: var(--accent); margin-right: 1rem; font-weight: 800;">${String.fromCharCode(65 + i)}</span> ${this.formatText(opt)}
                         </button>
                     `).join('')}
@@ -578,6 +587,14 @@ const Quiz = {
         const q = this.currentCompQuestion;
         const isCorrect = idx === q.answer;
 
+        // --- VISUAL FEEDBACK ---
+        const buttons = document.querySelectorAll('.option-btn');
+        buttons.forEach((btn, i) => {
+            btn.disabled = true;
+            if (i === q.answer) btn.classList.add('correct');
+            else if (i === idx) btn.classList.add('incorrect');
+        });
+
         this.competitionResponses.push({
             question: q.question,
             userAnswer: q.options[idx],
@@ -585,13 +602,33 @@ const Quiz = {
             isCorrect: isCorrect
         });
 
-        if (this.currentIndex < 24) {
-            this.currentIndex++;
-            await this.loadCompetitionQuestion();
-        } else {
-            await this.finishCompetition();
-        }
-        this.processing = false;
+        // --- REAL-TIME SYNC ---
+        const score = this.competitionResponses.filter(r => r.isCorrect).length;
+        const percentage = (score / 25) * 100;
+
+        try {
+            fetch('/api/competition/update-progress', {
+                method: 'POST',
+                headers: { ...Auth.getAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    teamName: this.competitionTeam.teamName,
+                    responses: this.competitionResponses,
+                    score,
+                    percentage
+                })
+            }); // Fire and forget for speed
+        } catch (e) { console.error("Sync partial failure"); }
+
+        // --- TRANSITION ---
+        setTimeout(async () => {
+            if (this.currentIndex < 24) {
+                this.currentIndex++;
+                await this.loadCompetitionQuestion();
+            } else {
+                await this.finishCompetition();
+            }
+            this.processing = false;
+        }, 1200); // 1.2s pause to see feedback
     },
 
     async finishCompetition() {

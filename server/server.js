@@ -80,10 +80,30 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Rate Limiting Protocols Disabled for smooth operative flow
-// const apiLimiter = rateLimit({ ... });
-// const authLimiter = rateLimit({ ... });
-// app.use('/api/', apiLimiter);
+// ghost protocol auth middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'UNAUTHORIZED: Protocol Token Missing.' });
+
+    jwt.verify(token, SECRET_KEY, (err, user) => {
+        if (err) return res.status(403).json({ message: 'FORBIDDEN: Protocol compromised.' });
+        req.user = user;
+        next();
+    });
+};
+
+const authenticateAdmin = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'UNAUTHORIZED: Admin credentials missing.' });
+
+    jwt.verify(token, SECRET_KEY, (err, decoded) => {
+        if (err || decoded.role !== 'admin') return res.status(403).json({ message: 'RESTRICTED: Admin clearance required.' });
+        req.user = decoded;
+        next();
+    });
+};
 
 // Diagnostic Middleware
 app.use((req, res, next) => {
@@ -1346,6 +1366,20 @@ app.get('/api/competition/question', async (req, res) => {
     }
 });
 
+app.post('/api/competition/update-progress', authenticateToken, async (req, res) => {
+    try {
+        const { teamName, responses, score, percentage } = req.body;
+        const team = await CompTeam.findOneAndUpdate(
+            { teamName },
+            { responses, score, percentage },
+            { new: true }
+        );
+        res.json({ message: "Progress synced.", team });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 app.post('/api/competition/submit', async (req, res) => {
     try {
         const { teamName, responses, score, percentage } = req.body;
@@ -1400,6 +1434,16 @@ app.get('/api/competition/results', async (req, res) => {
             return res.status(403).json({ message: "Results not released yet." });
         }
         const teams = await CompTeam.find({ completed: true }).sort({ percentage: -1, completedAt: 1 });
+        res.json(teams);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Admin-specific live results (includes ACTIVE teams)
+app.get('/api/admin/competition/results', authenticateAdmin, async (req, res) => {
+    try {
+        const teams = await CompTeam.find({}).sort({ score: -1, completedAt: 1 });
         res.json(teams);
     } catch (err) {
         res.status(500).json({ message: err.message });

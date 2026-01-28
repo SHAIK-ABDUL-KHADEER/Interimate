@@ -60,19 +60,30 @@ async function getCompetitionQuestion(teamName, topic, currentQuestionIdx) {
     const syllabus = competitionBlueprint[topic] || competitionBlueprint['java'];
     const subtopic = syllabus[currentQuestionIdx % syllabus.length];
 
+    // Determine question type: Every 5th question is "Predict Output" code challenge
+    const isCodeChallenge = (currentQuestionIdx % 5 === 0);
+
     const prompt = `
-        System: High-Precision Competition Quiz Generator.
+        System: High-Level Competition Quiz Generator for Junior Operatives.
         Topic: ${topic}
         Concept: ${subtopic}
         Target: Question #${currentQuestionIdx} for Team: ${teamName}.
+        
+        REQUIRED_DIFFICULTY: Simple, Basic, Theoretical. No advanced logic.
 
-        TASK: Generate a UNIQUE, TRICKY MCQ. 
-        DIFFICULTY: Basic to Intermediate ONLY.
-        CONSTRAINTS: 
-        - Under 4 lines.
-        - No polite filler.
-        - Strictly No Python (if Java).
-        - Focus on conceptual edge cases.
+        ${isCodeChallenge ?
+            `TASK: Generate a "PREDICT THE OUTPUT" question.
+            CONSTRAINTS: 
+            - Include a small, simple code snippet in the question field using markdown backticks.
+            - The code must be easy to trace for a beginner.
+            - The question should ask "What is the output of the following code?".`
+            :
+            `TASK: Generate a simple THEORETICAL MCQ.
+            CONSTRAINTS:
+            - Focus on fundamental "What is" or "Why" concepts.
+            - Strictly NO code snippets.
+            - Under 3 lines of text.`
+        }
 
         JSON FORMAT ONLY:
         {"question": "str", "options": ["4 str"], "answer": 0-3, "explanation": "1 line str"}
