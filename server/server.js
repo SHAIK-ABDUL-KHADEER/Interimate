@@ -12,7 +12,6 @@ const { getCompetitionQuestion } = require('./competitionService');
 const fs = require('fs').promises;
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
-const { User, Question, Progress, OTP, Interview, Payment } = require('./models');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const { getNextInterviewQuestion, generateFinalReport } = require('./interviewService');
