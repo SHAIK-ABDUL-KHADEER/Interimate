@@ -96,12 +96,24 @@ const Quiz = {
     },
 
     async loadCompetitionQuestion() {
-        const isFirstLoad = !this.currentCompQuestion;
+        App.setLoading(true);
 
-        App.setLoading(true); // Always show cursor loading
+        let subtextTimer = setTimeout(() => {
+            if (this.loading) {
+                const subtext = this.container?.querySelector('div[style*="opacity: 0.7"]');
+                if (subtext) subtext.textContent = "AI ARCHITECT IS SYNTHESIZING MISSION DATA...";
+            }
+        }, 8000);
 
         try {
-            const res = await fetch(`/api/competition/question?teamName=${this.competitionTeam.teamName}&index=${this.currentIndex + 1}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+            const res = await fetch(`/api/competition/question?teamName=${encodeURIComponent(this.competitionTeam.teamName)}&index=${this.currentIndex + 1}`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
             if (!res.ok) {
                 const errData = await res.json();
                 throw new Error(errData.message || "Tactical Sync Interrupted.");
@@ -109,9 +121,12 @@ const Quiz = {
             const data = await res.json();
             this.currentCompQuestion = data;
         } catch (err) {
-            this.errorMessage = "Failed to synchronize competition data: " + err.message;
+            this.errorMessage = err.name === 'AbortError'
+                ? "Mission Protocol Timeout: AI Core is non-responsive. Please retry."
+                : "Failed to synchronize competition data: " + err.message;
         } finally {
-            this.loading = false; // Critical: Ensure Initializing screen is cleared
+            clearTimeout(subtextTimer);
+            this.loading = false;
             App.setLoading(false);
             this.render();
         }

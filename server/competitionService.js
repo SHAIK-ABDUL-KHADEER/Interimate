@@ -32,7 +32,7 @@ let genAI = null;
 
 async function getCompetitionQuestion(teamName, topic, currentQuestionIdx) {
     if (!genAI) genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-1.5-flash" });
 
     // Determine if this should be a "Shared" question (5 per team)
     // We'll use a deterministic approach: Questions 5, 10, 15, 20, 25 are shared from other teams
