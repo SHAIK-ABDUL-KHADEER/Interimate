@@ -121,7 +121,7 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
     if (type === 'quiz') {
         return {
             id: unitNumber,
-            question: `Explain the fundamental concept of ${checkpoint.subtopic} and its primary use case in ${topic}.`,
+            question: `* Explain the fundamental concept of ${checkpoint.subtopic} and its primary use case in ${topic}.`,
             options: ["It simplifies complexity", "It enhances performance", "It ensures reliability", "All of the above"],
             answer: 3,
             explanation: "Fallback question generated due to tactical engine synchronization delay."
@@ -129,7 +129,7 @@ async function generateQuestion(topic, type, existingCount, existingData = []) {
     } else {
         return {
             id: unitNumber,
-            title: `${checkpoint.subtopic} Implementation`,
+            title: `* ${checkpoint.subtopic} Implementation`,
             description: `Write a basic implementation of ${checkpoint.subtopic} using Java.`,
             template: "// Base implementation required here"
         };
