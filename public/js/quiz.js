@@ -86,19 +86,20 @@ const Quiz = {
             return;
         }
 
-        this.loading = true;
-        this.render();
-        await this.loadCompetitionQuestion();
-    },
-
-    async loadCompetitionQuestion() {
-        const isFirst = this.currentIndex === 0;
-        if (isFirst) {
+        // Only show full-screen loader if we're starting fresh (Q1)
+        if (this.currentIndex === 0) {
             this.loading = true;
             this.render();
         }
 
-        App.setLoading(true); // Stealth cursor loading
+        await this.loadCompetitionQuestion();
+    },
+
+    async loadCompetitionQuestion() {
+        const isFirstLoad = !this.currentCompQuestion;
+
+        App.setLoading(true); // Always show cursor loading
+
         try {
             const res = await fetch(`/api/competition/question?teamName=${this.competitionTeam.teamName}&index=${this.currentIndex + 1}`);
             if (!res.ok) {
@@ -110,7 +111,7 @@ const Quiz = {
         } catch (err) {
             this.errorMessage = "Failed to synchronize competition data: " + err.message;
         } finally {
-            if (isFirst) this.loading = false;
+            this.loading = false; // Critical: Ensure Initializing screen is cleared
             App.setLoading(false);
             this.render();
         }

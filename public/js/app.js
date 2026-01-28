@@ -95,10 +95,7 @@ const App = {
         if (this.loadingTimeout) clearTimeout(this.loadingTimeout);
 
         if (isLoading) {
-            // Grace period of 250ms before showing the loader
-            this.loadingTimeout = setTimeout(() => {
-                document.body.classList.add('loading-active');
-            }, 250);
+            document.body.classList.add('loading-active');
         } else {
             document.body.classList.remove('loading-active');
         }
