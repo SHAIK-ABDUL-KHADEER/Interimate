@@ -80,30 +80,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// ghost protocol auth middleware
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    if (!token) return res.status(401).json({ message: 'UNAUTHORIZED: Protocol Token Missing.' });
-
-    jwt.verify(token, SECRET_KEY, (err, user) => {
-        if (err) return res.status(403).json({ message: 'FORBIDDEN: Protocol compromised.' });
-        req.user = user;
-        next();
-    });
-};
-
-const authenticateAdmin = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    if (!token) return res.status(401).json({ message: 'UNAUTHORIZED: Admin credentials missing.' });
-
-    jwt.verify(token, SECRET_KEY, (err, decoded) => {
-        if (err || decoded.role !== 'admin') return res.status(403).json({ message: 'RESTRICTED: Admin clearance required.' });
-        req.user = decoded;
-        next();
-    });
-};
+// ghost protocol auth middleware disabled here, already defined below.
 
 // Diagnostic Middleware
 app.use((req, res, next) => {
