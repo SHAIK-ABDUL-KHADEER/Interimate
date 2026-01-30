@@ -195,7 +195,7 @@ async function getNextInterviewQuestion(interview) {
         context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} based on their resume. 
         Resume Content: ${interview.resumeText}`;
     } else {
-        context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} on topics: ${interview.topics.join(', ')}.`;
+        context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} on topics: ${interview.topics.join(', ')}. Do not ask more complex Questions, Instead ask tricky questions and make sure that the questions are under 3 lines and simple for better understanding.`;
     }
 
     const codeCount = interview.history.filter(h => h.isCodeRequired).length;
