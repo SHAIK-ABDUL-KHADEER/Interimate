@@ -189,10 +189,10 @@ async function getNextInterviewQuestion(interview) {
     let context = "";
     if (interview.type === 'role-resume') {
         context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} for the specific role of: "${interview.targetRole}".
-        Evaluation Context: You must weigh their Resume history against the requirements of the "${interview.targetRole}" position.
+        Evaluation Context: You must weigh their Resume history against the requirements of the "${interview.targetRole}" position. QUESTION STRICTLY LESS THAN 3 LINES.
         Resume Content: ${interview.resumeText}`;
     } else if (interview.type === 'resume') {
-        context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} based on their resume. 
+        context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} based on their resume. QUESTION STRICTLY LESS THAN 3 LINES.
         Resume Content: ${interview.resumeText}`;
     } else {
         context = `You are a Professional Technical Interviewer. You are interviewing ${interview.interviewerName} on topics: ${interview.topics.join(', ')}. Do not ask more complex Questions, Instead ask tricky questions and make sure that the questions are under 3 lines and simple for better understanding.`;
